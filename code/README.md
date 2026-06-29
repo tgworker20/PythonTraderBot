@@ -167,7 +167,8 @@ The bot is optimized for speed and accuracy, and can be deployed in live trading
 ---
 
 ### 🔹 SP2L
-A bot according to the PourSamadi strategy.
+A trading bot according to the PourSamadi strategy.
+
 ---
 
 ## 📺 YouTube Tutorials
