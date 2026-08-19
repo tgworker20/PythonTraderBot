@@ -114,17 +114,7 @@ def Strategy(symbol, preBuy, preSell, status):
         
             return buy,sell,status,sl,tp
         else:
-           #اگر پوزیشن قبلی خرید بوده
-            if preBuy == True:
-                if sell == True:
-                    return False,True,False,sl,tp
-                else:
-                    return True,False,True,sl,tp
-            elif preSell == True:
-                if buy == True:
-                    return True,False,False,sl,tp
-                else:
-                    return False,True,True,sl,tp
+           return preBuy, preSell, status, sl, tp
     
 
     

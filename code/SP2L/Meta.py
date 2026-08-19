@@ -209,7 +209,7 @@ class Meta:
                 "type_time": mt5.ORDER_TIME_GTC}
 
                 #برای بعضی از استراتژی ها تیک پروفیت می گذارم
-                if magic == 5 or magic == 1000 or magic==4 or magic==6 or magic == 7:
+                if magic == 5 or magic == 1000 or magic==4 or magic==6 or magic == 7 or magic == 8:
                     request['tp']=tp
             
                 result = mt5.order_send(request)
@@ -248,7 +248,7 @@ class Meta:
                 "type_filling": filling_type,
                 "type_time": mt5.ORDER_TIME_GTC}
 
-                if magic == 5 or magic == 1000 or magic==4 or magic==6 or magic == 7:
+                if magic == 5 or magic == 1000 or magic==4 or magic==6 or magic == 7 or magic == 8:
                     request['tp']=tp
             
                 result = mt5.order_send(request)
