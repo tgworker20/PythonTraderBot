@@ -167,7 +167,13 @@ The bot is optimized for speed and accuracy, and can be deployed in live trading
 ---
 
 ### 🔹 SP2L
-A trading bot according to the PourSamadi strategy.
+A trading bot according to the PourSamadi strategy. It has simpler code for learning.
+
+---
+
+### 🔹 SP2L_Advanced
+A trading bot according to the PourSamadi strategy. It has 84% winrate with profit factor 5.5 and return 43%.
+I implemented it with many filters for fast backtest on any ways.
 
 ---
 
