@@ -106,7 +106,7 @@ def Strategy(symbol, preBuy, preSell, status):
                 tp = (price - sl) + price
             elif sell == True:
                 price = mt5.symbol_info(symbol).bid
-                sl = data['high'].iloc[-2]
+                sl = data['high'].iloc[-4]
                 tp = price - (sl - price)
             else:
                 sl = 0
