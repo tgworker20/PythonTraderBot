@@ -50,6 +50,30 @@ function Ok    { param($msg) Write-Host "    $msg" -ForegroundColor Green }
 function Info  { param($msg) Write-Host "    $msg" -ForegroundColor Gray }
 function Fail  { param($msg) Write-Host "[ERROR] $msg" -ForegroundColor Red }
 
+function Invoke-PythonCheck {
+    # Runs the portable python with the given arguments, hides its output and
+    # returns ONLY the exit code.
+    #
+    # IMPORTANT: do NOT use "2>$null" directly on a native command while
+    # $ErrorActionPreference is "Stop" (the default in this script). Windows
+    # PowerShell 5.1 turns the first stderr line - e.g. "No module named pip" -
+    # into a terminating NativeCommandError and KILLS the whole script.
+    # (Fixed behaviour in PowerShell 7+, but the default on Windows 11 is 5.1.)
+    # Inside this function we temporarily relax the preference, which makes the
+    # redirected stderr harmless.
+    param([string[]]$Arguments)
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        & $PythonExe @Arguments 2>$null | Out-Null
+        return $LASTEXITCODE
+    } catch {
+        return 1
+    } finally {
+        $ErrorActionPreference = $prev
+    }
+}
+
 function Download-File {
     param([string]$Url, [string]$OutFile)
     try {
@@ -140,10 +164,10 @@ if ($PthContent -match "(?m)^import\s+site") {
 # ------------------------------------------------------------- 3) pip -------
 Step "Step 3/4 - Installing pip (inside the portable folder)"
 
-& $PythonExe -m pip --version 2>$null
-if ($LASTEXITCODE -eq 0) {
+if ((Invoke-PythonCheck @("-m", "pip", "--version")) -eq 0) {
     Ok "pip already installed."
 } else {
+    Info "pip is not installed yet - installing it with get-pip.py ..."
     Info "Downloading: $GetPipUrl"
     $GetPipPath = Join-Path $TempDir "get-pip.py"
     try {
@@ -156,6 +180,14 @@ if ($LASTEXITCODE -eq 0) {
     & $PythonExe $GetPipPath --no-warn-script-location
     if ($LASTEXITCODE -ne 0) {
         Fail "get-pip.py failed."
+        exit 1
+    }
+    # verify that pip is now really importable; if not, show the ._pth file
+    # content so the problem is easy to diagnose.
+    if ((Invoke-PythonCheck @("-m", "pip", "--version")) -ne 0) {
+        Fail "pip was installed but python cannot import it."
+        Info "Content of $($PthFile.Name) for diagnosis:"
+        Get-Content $PthFile.FullName | ForEach-Object { Info "    $_" }
         exit 1
     }
     Ok "pip installed."
@@ -190,15 +222,13 @@ Step "Verifying installation"
 & $PythonExe -c "import notebook; print('    jupyter notebook : OK')"
 & $PythonExe -c "import yfinance; print('    yfinance : OK')"
 
-& $PythonExe -c "import pandas_ta" 2>$null
-if ($LASTEXITCODE -eq 0) {
+if ((Invoke-PythonCheck @("-c", "import pandas_ta")) -eq 0) {
     & $PythonExe -c "import pandas_ta; print('    pandas-ta : OK')"
 } else {
     Info "pandas-ta not installed (only needed for TraderBot / CE_ZLSMA bots)."
 }
 
-& $PythonExe -c "import MetaTrader5" 2>$null
-if ($LASTEXITCODE -eq 0) {
+if ((Invoke-PythonCheck @("-c", "import MetaTrader5")) -eq 0) {
     & $PythonExe -c "import MetaTrader5; print('    MetaTrader5 : OK')"
 } else {
     Info "MetaTrader5 not installed (only needed for the MT5 bots)."
