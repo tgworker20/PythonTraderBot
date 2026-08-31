@@ -1,0 +1,301 @@
+# -*- coding: utf-8 -*-
+"""
+کاتالوگ کامل ربات‌ها، کتابخانه‌ها و نوت‌بوک‌های ریپازیتوری PythonTraderBot
+شامل توضیح استراتژی، پیش‌نیازها و آمارهای اعلام‌شده توسط نویسنده (از README)
+"""
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+CODE_DIR = REPO_ROOT / "code"
+
+# ---------------------------------------------------------------------------
+# آمارهای اعلام‌شدهٔ نویسنده (منبع: code/README.md)
+# این اعداد ادعای نویسنده هستند و باید با بک‌تست شخصی تایید شوند.
+# ---------------------------------------------------------------------------
+CLAIMED_STATS = {
+    "traderbot": {"metric": "سود", "value": "84% در ۱۰ روز", "raw": "Profit: 84% in just 10 days"},
+    "ce_zlsma_ha_atr": {"metric": "سود ادعاشده", "value": "1700%", "raw": "Claimed profit: 1700%!"},
+    "michael_harris": {"metric": "سود گزارش‌شده", "value": "370%", "raw": "Reported profit: 370%"},
+    "vwap_bb_rsi": {"metric": "وین‌ریت", "value": "62%", "raw": "Win rate: 62%"},
+    "leverage_long_run": {"metric": "وین‌ریت / سود", "value": "85% وین‌ریت | 1700% سود", "raw": "85% win rate | 1700% profit"},
+    "sp2l_advanced": {"metric": "وین‌ریت / PF / بازده", "value": "84% وین‌ریت | PF=5.5 | بازده 43%", "raw": "84% winrate with profit factor 5.5 and return 43%"},
+    "marco": {"metric": "سود", "value": "4900% در ۱۰ سال (۲۰ سهم روندی آمریکا)", "raw": "4900% Profit over 10 years on 20 trending US stocks"},
+}
+
+# ---------------------------------------------------------------------------
+# ربات‌های لایو (قابل اجرا با subprocess)
+# ---------------------------------------------------------------------------
+BOTS = [
+    {
+        "id": "easybot",
+        "name": "EasyBot",
+        "file": "EasyBot.py",
+        "folder": "",
+        "category": "ربات لایو",
+        "strategy": "کراس میانگین متحرک ساده SMA تند/کند (20/200)",
+        "timeframe": "M1",
+        "magic": "0",
+        "symbol": "BITCOIN (قابل ویرایش در فایل)",
+        "needs": ["mt5"],
+        "claimed": None,
+        "desc": "ساده‌ترین ربات مجموعه؛ مناسب یادگیری ساختار کلی ربات‌های معاملاتی. هر ۶۰ ثانیه سیگنال کراس SMA را چک می‌کند.",
+    },
+    {
+        "id": "traderbot",
+        "name": "TraderBot (چند استراتژی)",
+        "file": "TraderBot.py",
+        "folder": "",
+        "category": "ربات لایو",
+        "strategy": "۴ استراتژی همزمان: BB_Full + BB_Half + HA_RSI_CE_EMA + CE_ZLSMA",
+        "timeframe": "H4 (بولینجر و شندلر) + M1 (هیکن‌آشی)",
+        "magic": "1, 2, 3, 4",
+        "symbol": "BITCOIN (قابل ویرایش)",
+        "needs": ["mt5", "sr_csv", "pandas_ta"],
+        "claimed": CLAIMED_STATS["traderbot"],
+        "desc": "قهرمان مجموعه: چند استراتژی با شماره magic جداگانه به‌طور همزمان اجرا می‌شوند؛ ورودها برای تایم‌فریم ۴ ساعته زمان‌بندی شده و سطوح حمایت/مقاومت فیلتر ورود CE_ZLSMA هستند. نیاز به support.csv و resistance.csv دارد (با ابزار تشخیص سطوح بسازید).",
+        "warning": "نکته مهم: در خط ۵۸۶ مقادیر ATR (vartp/varsl) بدون stopLossWithAtr=True به Meta.run پاس می‌شوند و ممکن است به‌جای فاصلهٔ قیمتی، درصد تفسیر شوند. (باگ بالقوه — پیش از حساب واقعی بررسی کنید)",
+    },
+    {
+        "id": "bb_full",
+        "name": "BB_Full",
+        "file": "BB_Full.py",
+        "folder": "",
+        "category": "ربات لایو",
+        "strategy": "بولینگر باند کامل: خرید در باند پایین، خروج در باند بالایی (و برعکس)",
+        "timeframe": "H4",
+        "magic": "1",
+        "symbol": "بیت‌کوین (آستانه‌ها برای بیت‌کوین کالیبره شده‌اند)",
+        "needs": ["mt5"],
+        "claimed": None,
+        "desc": "نسخهٔ مستقل استراتژی بولینگر کامل ربات TraderBot با تریلینگ‌استاپ.",
+        "warning": "آستانه‌های 600/1100/100 داخل کد برای قیمت بیت‌کوین هاردکد شده‌اند؛ برای نماد دیگر باید تغییر کنند.",
+    },
+    {
+        "id": "bb_half",
+        "name": "BB_Half",
+        "file": "BB_Half.py",
+        "folder": "",
+        "category": "ربات لایو",
+        "strategy": "بولینگر نیمه: خرید در باند پایین، خروج در باند میانی + فیلتر بازار رنج (شیب)",
+        "timeframe": "H4",
+        "magic": "2",
+        "symbol": "بیت‌کوین",
+        "needs": ["mt5"],
+        "claimed": None,
+        "desc": "نسخهٔ مستقل استراتژی بولینگر نیمه با فیلتر شیب خط میانی برای حذف بازار رنج.",
+    },
+    {
+        "id": "ce_zlsma_ha",
+        "name": "CE_ZLSMA_HA",
+        "file": "CE_ZLSMA_HA.py",
+        "folder": "",
+        "category": "ربات لایو",
+        "strategy": "Chandelier Exit + Zero-Lag SMA + هیکن‌آشی + فیلتر بولینگر",
+        "timeframe": "H4",
+        "magic": "4",
+        "symbol": "بیت‌کوین",
+        "needs": ["mt5", "sr_csv", "pandas_ta"],
+        "claimed": None,
+        "desc": "ورود با سیگنال شندلر اکیت + تاییدیهٔ هیکن‌آشی و ZLSMA؛ SL/TP درصدی (ریسک ۱٪، سود ۲٪).",
+    },
+    {
+        "id": "ce_zlsma_ha_atr",
+        "name": "CE_ZLSMA_HA_ATR",
+        "file": "CE_ZLSMA_HA_ATR.py",
+        "folder": "",
+        "category": "ربات لایو",
+        "strategy": "همان CE_ZLSMA با استاپ‌لاس/حد سود مبتنی بر ATR (SL=1×ATR، TP=2.1×SL)",
+        "timeframe": "H4",
+        "magic": "4",
+        "symbol": "بیت‌کوین",
+        "needs": ["mt5", "pandas_ta"],
+        "claimed": CLAIMED_STATS["ce_zlsma_ha_atr"],
+        "desc": "نسخهٔ ارتقایافته با مدیریت ریسک ATR. طبق README نویسنده، سود ادعاشده ۱۷۰۰٪.",
+        "warning": "در خط ۲۱۰ مقادیر ATR بدون stopLossWithAtr=True به Meta.run پاس می‌شوند (همان باگ بالقوهٔ TraderBot).",
+    },
+    {
+        "id": "ha_rsi_scalper",
+        "name": "HA_RSI_CE_EMA_Scalper",
+        "file": "HA_RSI_CE_EMA_Scalper.py",
+        "folder": "",
+        "category": "ربات لایو",
+        "strategy": "اسکالپر: هیکن‌آشی روی مقادیر RSI + Chandelier Exit + فیلتر EMA200",
+        "timeframe": "M1",
+        "magic": "3",
+        "symbol": "بیت‌کوین",
+        "needs": ["mt5"],
+        "claimed": None,
+        "desc": "اسکالپر یک‌دقیقه‌ای؛ خروج پوزیشن با RSI در نواحی اشباع (بالای 66 / زیر 28). بک‌تست اختصاصی آن در تب بک‌تست موجود است.",
+    },
+    {
+        "id": "vwap_bb_rsi",
+        "name": "VWAP_BB_RSI",
+        "file": "VWAP_BB_RSI.py",
+        "folder": "",
+        "category": "ربات لایو",
+        "strategy": "اسکالپر VWAP + بولینگر + RSI با SL/TP مبتنی بر ATR",
+        "timeframe": "M5",
+        "magic": "5",
+        "symbol": "RIPPLE, BNB, CARDANO, CHAINLINK",
+        "needs": ["mt5"],
+        "claimed": CLAIMED_STATS["vwap_bb_rsi"],
+        "desc": "اسکالپر ۵ دقیقه‌ای روی چند آلت‌کوین؛ طبق README وین‌ریت ۶۲٪.",
+    },
+    {
+        "id": "sp2l_bot",
+        "name": "SP2L_Bot (نسخهٔ آموزشی)",
+        "file": "SP2L_Bot.py",
+        "folder": "SP2L",
+        "category": "ربات لایو",
+        "strategy": "استراتژی پورصمدی: کندل اسپایک + گپ قیمتی؛ SL زیر/بالای کندل اسپایک",
+        "timeframe": "M1",
+        "magic": "8",
+        "symbol": "XAUUSD (طلا)",
+        "needs": ["mt5"],
+        "claimed": None,
+        "desc": "نسخهٔ ساده و خوانا برای یادگیری استراتژی SP2L؛ کد ساده‌شده برای آموزش.",
+    },
+    {
+        "id": "sp2l_advanced",
+        "name": "SP2L_Advanced_Bot",
+        "file": "SP2L_Advanced_Bot.py",
+        "folder": "SP2L",
+        "category": "ربات لایو",
+        "strategy": "SP2L کامل: پندینگ‌ستاپ + فیلترهای EMA/ترند/ADX/سشن نیویورک + ورود دوم اختیاری",
+        "timeframe": "M1",
+        "magic": "8",
+        "symbol": "XAUUSD (طلا)",
+        "needs": ["mt5"],
+        "claimed": CLAIMED_STATS["sp2l_advanced"],
+        "desc": "پیشرفته‌ترین ربات ریپو (۱۵۶۱ خط) با فیلترهای چندگانه و مدیریت ریسک نقطه‌ای. طبق README: وین‌ریت ۸۴٪، پروفیت‌فاکتور 5.5، بازده ۴۳٪.",
+    },
+    {
+        "id": "trailingbot",
+        "name": "TrailingBot",
+        "file": "TrailingBot.py",
+        "folder": "",
+        "category": "ابزار کمکی",
+        "strategy": "فقط تریلینگ‌استاپ روی همهٔ پوزیشن‌های باز حساب",
+        "timeframe": "هر ۱۰ ثانیه",
+        "magic": "همه",
+        "symbol": "همهٔ نمادهای باز",
+        "needs": ["mt5"],
+        "claimed": None,
+        "desc": "معامله‌ای باز نمی‌کند؛ فقط استاپ‌لاس پوزیشن‌های باز را به‌صورت پویا دنبال می‌کند. برای استفاده از آن کنار سایر ربات‌ها.",
+    },
+    {
+        "id": "easybot_sr",
+        "name": "EasyBot با فیلتر حمایت/مقاومت",
+        "file": "EasyBotWithSupportResistance.py",
+        "folder": "SupportResistance",
+        "category": "ربات لایو",
+        "strategy": "کراس SMA + عدم ورود خرید روی مقاومت و فروش روی حمایت",
+        "timeframe": "M1",
+        "magic": "0",
+        "symbol": "بیت‌کوین",
+        "needs": ["mt5", "sr_csv"],
+        "claimed": None,
+        "desc": "EasyBot با فیلتر سطوح کلیدی؛ نیاز به support.csv و resistance.csv دارد.",
+    },
+    {
+        "id": "news_vader",
+        "name": "تحلیل احساسات اخبار (VADER)",
+        "file": "SentimentAnalysis.py",
+        "folder": "NewsSentimentClassifier",
+        "category": "تحلیل",
+        "strategy": "دریافت اخبار طلا از Google News RSS و تحلیل احساسات با VADER",
+        "timeframe": "—",
+        "magic": "—",
+        "symbol": "اخبار بازار طلا",
+        "needs": ["internet"],
+        "claimed": None,
+        "desc": "بدون نیاز به متاتریدر! اخبار را می‌گیرد و خلاصهٔ احساسات بازار (مثبت/منفی/خنثی) را چاپ می‌کند. پیش‌فرض analyzeContent=False است تا مرورگر Playwright لازم نباشد.",
+    },
+    {
+        "id": "news_finbert",
+        "name": "تحلیل احساسات اخبار (FinBERT)",
+        "file": "SentimentAnalysisFinBert.py",
+        "folder": "NewsSentimentClassifier",
+        "category": "تحلیل",
+        "strategy": "همان تحلیل اخبار با مدل FinBERT (ترنسفورمر)",
+        "timeframe": "—",
+        "magic": "—",
+        "symbol": "اخبار بازار طلا",
+        "needs": ["internet", "torch"],
+        "claimed": None,
+        "desc": "دقیق‌تر اما سنگین (نیاز به torch و transformers — حدود ۲ گیگابایت). در سرور سندباکس نصب نیست؛ روی سیستم خودتان با requirements کامل اجرا کنید.",
+    },
+]
+
+# ---------------------------------------------------------------------------
+# کتابخانه‌ها (غیرقابل اجرا به‌صورت مستقل)
+# ---------------------------------------------------------------------------
+LIBRARIES = [
+    {
+        "id": "meta",
+        "name": "Meta.py (لایهٔ اجرای متاتریدر)",
+        "path": "code/Meta.py (کپی) + code/SP2L/Meta.py (اصلی)",
+        "desc": "هستهٔ همهٔ ربات‌ها: دریافت کندل، ارسال سفارش، تریلینگ‌استاپ، مدیریت بازار بسته. در ریپوی اصلی در مخزن جداگانه بود؛ برای راحتی کپی آن در code/ قرار داده شده.",
+    },
+    {
+        "id": "telegrambot",
+        "name": "TelegramBot.py",
+        "path": "code/TelegramBot.py + code/SP2L/TelegramBot.py",
+        "desc": "ارسال اعلان‌های ربات به تلگرام. برای فعال‌سازی، توکن و chatId را داخل فایل پر کنید (پیش‌فرض خالی است).",
+    },
+    {
+        "id": "coinexapi",
+        "name": "CoinexApi.py",
+        "path": "code/CoinexApi.py",
+        "desc": "لایهٔ API صرافی CoinEx (اسپات/فیوچرز) با امضای HMAC. کتابخانه است و مستقل اجرا نمی‌شود؛ نیاز به فایل access_id_secret_key.csv دارد.",
+    },
+    {
+        "id": "get",
+        "name": "get.py (خروجی‌گیر کندل)",
+        "path": "code/get.py",
+        "desc": "کندل‌های بیت‌کوین H4 را از متاتریدر می‌گیرد و BitcoinH4.csv می‌سازد. در اینترفیس، صفحهٔ «ابزارها» همین کار را برای هر نماد/تایم‌فریمی انجام می‌دهد.",
+    },
+]
+
+# ---------------------------------------------------------------------------
+# نوت‌بوک‌های تحلیلی/یادگیری ماشین (از طریق صفحهٔ بک‌تست یا Jupyter)
+# ---------------------------------------------------------------------------
+NOTEBOOKS = [
+    {"name": "HA_RSI_CE_EMA_Scalper_Backtesting", "topic": "بک‌تست ربات اسکالپر", "needs": "فایل Candles.csv + کتابخانه backtesting", "builtin": True,
+     "desc": "بک‌تست کامل ربات اسکالپر هیکن‌آشی/RSI — در اینترفیس به‌صورت داخلی و با آپلود CSV اجرا می‌شود."},
+    {"name": "MichaelHarrisSplit", "topic": "بک‌تست استراتژی مایکل هریس + بهینه‌سازی", "needs": "متاتریدر + pandas-ta", "builtin": True,
+     "desc": "استراتژیSplit از کتاب Profitability and Systematic Trading؛ سود گزارش‌شده ۳۷۰٪. در اینترفیس با اسکریپت تبدیل‌شده اجرا می‌شود."},
+    {"name": "SP2L2_Advanced_Backtest", "topic": "بک‌تست موتور دست‌نویس SP2L", "needs": "متاتریدر", "builtin": True,
+     "desc": "۲۵۰۰ خط شبیه‌ساز کامل استراتژی SP2L پیشرفته با win_rate/profit_factor/max_drawdown — در اینترفیس اجرا می‌شود."},
+    {"name": "Markov", "topic": "بک‌تست زنجیرهٔ مارکوف روی ۲۰ سهم آمریکا", "needs": "اینترنت (yfinance)", "builtin": True,
+     "desc": "بعد از n کندل هم‌رنگ، معاملهٔ معکوس — در اینترفیس به‌صورت داخلی اجرا می‌شود."},
+    {"name": "LeverageLongRun_SPY_UPRO", "topic": "بک‌تست استراتژی لوریج SPY→UPRO", "needs": "اینترنت (yfinance)", "builtin": True,
+     "desc": "سیگنال از SPY کم‌نوسان، اجرای معامله روی UPRO لوریج‌دار — وین‌ریت اعلامی ۸۵٪ — در اینترفیس اجرا می‌شود."},
+    {"name": "SMABestPerformance", "topic": "بهینه‌سازی پارامتر SMA (۹۰هزار ترکیب)", "needs": "فایل BitcoinH4.csv", "builtin": True,
+     "desc": "بهینه‌ساز وکتوری — در اینترفیس با هر CSV کندل قابل اجراست."},
+    {"name": "KNN&XGBOOST", "topic": "پیش‌بینی جهت با KNN و XGBoost", "needs": "دادهٔ کندل + scikit-learn/xgboost", "builtin": False,
+     "desc": "آموزش مدل‌های ML روی کندل‌ها (باید در Jupyter اجرا شود)."},
+    {"name": "WhichIndicator", "topic": "انتخاب بهترین اندیکاتور با XGBoost", "needs": "دادهٔ کندل + xgboost", "builtin": False,
+     "desc": "اهمیت ویژگی‌های اندیکاتورها برای انتخاب بهترین ترکیب (Jupyter)."},
+    {"name": "TargetDefinition", "topic": "مدل‌سازی هدف با ML", "needs": "دادهٔ کندل + scipy", "builtin": False,
+     "desc": "آموزش تعریف هدف (target) برای مدل‌های یادگیری ماشین (Jupyter)."},
+    {"name": "AI-Traderbot", "topic": "ربات لایو مبتنی بر مدل ML (joblib)", "needs": "متاتریدر + مدل آموزش‌دیده", "builtin": False,
+     "desc": "استفاده از مدل ذخیره‌شده برای معاملهٔ زنده (Jupyter)."},
+    {"name": "TradeAssistant-SR-Detector 1&2", "topic": "تشخیص سقف/کف و سطوح قوی", "needs": "دادهٔ کندل", "builtin": False,
+     "desc": "استخراج سقف‌ها و کف‌ها و رتبه‌بندی قوی‌ترین سطوح با هیستوگرام (Jupyter)."},
+    {"name": "Slope_PandasTa_Backroll", "topic": "محاسبهٔ شیب اندیکاتورها با pandas-ta", "needs": "فایل EURUSDH4.csv", "builtin": False,
+     "desc": "محاسبهٔ شیب RSI و MA با رگرسیون خطی (Jupyter)."},
+    {"name": "GetSummaryAndIndicatorFromTradingview", "topic": "دریافت داده/اندیکاتور از TradingView", "needs": "tradingview_ta", "builtin": False,
+     "desc": "اتصال به خلاصهٔ اندیکاتورهای تریدینگ‌ویو (Jupyter)."},
+    {"name": "TraderBotWithTradingviewData", "topic": "معامله با سیگنال TradingView روی متاتریدر", "needs": "tradingview_ta + متاتریدر", "builtin": False,
+     "desc": "دریافت سیگنال از تریدینگ‌ویو و اجرای آن روی متاتریدر (Jupyter)."},
+]
+
+def get_bot(bot_id):
+    for b in BOTS:
+        if b["id"] == bot_id:
+            return b
+    return None
+
+def bot_script_path(bot):
+    return CODE_DIR / bot["folder"] / bot["file"]

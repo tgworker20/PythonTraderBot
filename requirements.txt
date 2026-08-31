@@ -1,0 +1,48 @@
+# =========================================================================
+# PythonTraderBot Control Center — requirements
+# نصب:  pip install -r requirements.txt
+# نکته: پیشنهاد پایتون 3.12 (برای نصب pandas-ta لازم است)
+# =========================================================================
+
+# --- اینترفیس (Streamlit) ---
+streamlit>=1.36
+
+# --- هستهٔ داده ---
+pandas>=2.0
+numpy>=1.24
+
+# --- اندیکاتورها ---
+ta>=0.11
+# pandas-ta فقط برای پایتون >= 3.12 در PyPI موجود است
+pandas-ta>=0.4.67b0 ; python_version >= "3.12"
+
+# --- بک‌تست ---
+backtesting>=0.3.3
+yfinance>=0.2.40
+
+# --- یادگیری ماشین / تحلیل ---
+scikit-learn>=1.3
+xgboost>=2.0
+joblib>=1.3
+scipy>=1.11
+matplotlib>=3.8
+seaborn>=0.13
+plotly>=5.18
+
+# --- اجرای ربات‌ها ---
+requests>=2.31
+colorama>=0.4
+tqdm>=4.66
+# پکیج متاتریدر فقط روی ویندوز نصب می‌شود (روی لینوکس/مک نادیده گرفته می‌شود)
+MetaTrader5>=5.0.45 ; sys_platform == "win32"
+
+# --- تحلیل احساسات اخبار ---
+feedparser>=6.0
+beautifulsoup4>=4.12
+vaderSentiment>=3.3
+playwright>=1.40
+# فعال‌سازی اختیاری مرورگر برای تحلیل متن کامل اخبار:  python -m playwright install chromium
+
+# --- اختیاری: مدل FinBERT (سنگین — حدود ۲ گیگابایت) ---
+# transformers>=4.40
+# torch>=2.2

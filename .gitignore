@@ -1,0 +1,16 @@
+# آرتیفکت‌های اینترفیس
+dashboard/toolkit/
+dashboard/logs/
+dashboard/__pycache__/
+__pycache__/
+*.pyc
+
+# محیط‌های مجازی
+myenv/
+.venv/
+venv/
+
+# خروجی‌ها و داده‌های موقت
+*.log
+access_id_secret_key.csv
+michael_harris_optimize_heatmap.png
