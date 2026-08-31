@@ -14,3 +14,7 @@ venv/
 *.log
 access_id_secret_key.csv
 michael_harris_optimize_heatmap.png
+
+# پوشهٔ سرور دانلود (فقط صفحهٔ ایندکس نگه داشته می‌شود)
+download/*
+!download/index.html

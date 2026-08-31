@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>دانلود PythonTraderBot Control Center</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;900&display=swap');
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: 'Vazirmatn', 'Segoe UI', Tahoma, sans-serif;
+    background: linear-gradient(160deg, #0f1b3d 0%, #1a2980 45%, #26d0ce 130%);
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    padding: 2rem; color: #12233f;
+}
+.card {
+    background: #ffffff; max-width: 680px; width: 100%;
+    border-radius: 22px; padding: 2.4rem 2.2rem;
+    box-shadow: 0 24px 70px rgba(3, 12, 40, 0.45);
+}
+.logo { font-size: 3rem; text-align: center; }
+h1 { text-align: center; font-size: 1.5rem; margin: 0.4rem 0 0.2rem; color: #16325c; }
+.sub { text-align: center; color: #6a7a95; font-size: 0.9rem; margin-bottom: 1.6rem; }
+.btn {
+    display: flex; align-items: center; justify-content: space-between;
+    background: linear-gradient(135deg, #1a2980, #26d0ce);
+    color: #fff; text-decoration: none; border-radius: 16px;
+    padding: 1.15rem 1.5rem; margin: 0.9rem 0; font-weight: 700; font-size: 1.02rem;
+    transition: transform .15s ease, box-shadow .15s ease;
+    box-shadow: 0 10px 26px rgba(26, 41, 128, 0.35);
+}
+.btn:hover { transform: translateY(-2px); box-shadow: 0 14px 34px rgba(26, 41, 128, 0.45); }
+.btn .left { display: flex; flex-direction: column; gap: 0.15rem; }
+.btn .hint { font-weight: 400; font-size: 0.78rem; opacity: 0.92; }
+.btn.small { background: #eef4ff; color: #16325c; box-shadow: none; border: 1px solid #cdddf5; padding: 0.85rem 1.3rem; font-size: 0.92rem; }
+.btn.small:hover { background: #e2eeff; box-shadow: none; }
+.arrow { font-size: 1.5rem; }
+.steps {
+    background: #f6f9ff; border: 1px solid #dbe6f5; border-radius: 14px;
+    padding: 1rem 1.2rem; margin-top: 1.4rem; font-size: 0.88rem; line-height: 2;
+}
+.steps b { color: #16325c; }
+code {
+    background: #10233f; color: #7ef2c4; padding: 0.1rem 0.55rem;
+    border-radius: 6px; font-size: 0.82rem; direction: ltr; display: inline-block;
+}
+.note { margin-top: 1rem; font-size: 0.8rem; color: #7a8aa5; text-align: center; line-height: 1.9; }
+hr { border: none; border-top: 1px dashed #d4e0f2; margin: 1.5rem 0; }
+.badge { display:inline-block; background:#e8fbf1; color:#0a7a3d; border-radius:999px; padding:0.15rem 0.8rem; font-size:0.75rem; font-weight:700; }
+</style>
+</head>
+<body>
+<div class="card">
+    <div class="logo">🤖</div>
+    <h1>مرکز کنترل PythonTraderBot</h1>
+    <div class="sub">بستهٔ کامل ربات‌های معاملاتی + اینترفیس Streamlit + بک‌تست‌ها</div>
+
+    <a class="btn" href="PythonTraderBot_ControlCenter.zip" download>
+        <div class="left">
+            <span>⬇️ دانلود پکیج کامل (ZIP)</span>
+            <span class="hint">۵۹ فایل — ۰.۶ مگابایت — کد ربات‌ها + اینترفیس + راهنما</span>
+        </div>
+        <span class="arrow">📦</span>
+    </a>
+
+    <a class="btn small" href="requirements.txt" download>
+        <div class="left"><span>فایل requirements.txt (جداست)</span></div>
+        <span class="arrow">📄</span>
+    </a>
+
+    <a class="btn small" href="START_HERE_FA.md" download>
+        <div class="left"><span>راهنمای فارسی شروع (START_HERE_FA.md)</span></div>
+        <span class="arrow">📖</span>
+    </a>
+
+    <hr>
+    <div class="steps">
+        <b>🔧 مراحل نصب روی سیستم خودتان:</b><br>
+        ۱) پایتون <b>3.12</b> را نصب کنید (برای pandas-ta لازم است) <span class="badge">python.org</span><br>
+        ۲) فایل ZIP را استخراج کنید<br>
+        ۳) در پوشهٔ اصلی: <code>pip install -r requirements.txt</code><br>
+        ۴) برای ربات‌های متاتریدر: ترمینال MetaTrader 5 را باز و لاگین کنید (فقط ویندوز)<br>
+        ۵) اجرای اینترفیس: <code>streamlit run dashboard/app.py</code><br>
+        ۶) مرورگر: <code>http://localhost:8501</code>
+    </div>
+
+    <div class="note">
+        🏆 وین‌ریت‌های اعلام‌شدهٔ نویسنده و تمام امکانات، داخل اینترفیس موجود است<br>
+        ⚠️ این مجموعه آموزشی است — اول روی حساب دمو تست کنید
+    </div>
+</div>
+</body>
+</html>
