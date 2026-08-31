@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# اجرای مستقل بک‌تست SP2L پیشرفته — تبدیل‌شده از SP2L2_Advanced_Backtest.ipynb
+# اجرای مستقل بک‌تست SP2L پیشرفته — تولیدشده از SP2L2_Advanced_Backtest.ipynb
 # نیاز به متاتریدر ۵ (ویندوز) دارد. پارامترها را در بخش SETTINGS ویرایش کنید.
 __author__ = "Alireza Sadabadi (converted by Control Center)"
 
@@ -2521,7 +2521,6 @@ print()
 print("DONE.")
 
 
-# اگر مستقل اجرا شود (نه از طریق اینترفیس) در پایان منتظر ورودی بمان
 if __name__ == "__main__":
     print()
     print("Backtest finished.")

@@ -7,6 +7,11 @@
 # --- اینترفیس (Streamlit) ---
 streamlit>=1.36
 
+# --- Jupyter (اجرای نوت‌بوک‌های نویسنده از داخل اینترفیس) ---
+notebook>=7.0
+nbconvert>=7.0
+# jupyterlab>=4.0   # اختیاری — اگر JupyterLab را ترجیح می‌دهید
+
 # --- هستهٔ داده ---
 pandas>=2.0
 numpy>=1.24

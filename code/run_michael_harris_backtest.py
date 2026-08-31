@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# اجرای مستقل بک‌تست استراتژی مایکل هریس — تبدیل‌شده از MichaelHarrisSplit.ipynb
+# اجرای مستقل بک‌تست استراتژی مایکل هریس — تولیدشده از MichaelHarrisSplit.ipynb
 # نیاز به متاتریدر ۵ (ویندوز) دارد.
-# پارامترها: نماد و تعداد کندل را در SECTION DATA ویرایش کنید.
-# برای اجرای بهینه‌سازی SL/TP (کندتر):  python run_michael_harris_backtest.py --optimize
+# نماد و تعداد کندل را در بخش دریافت داده ویرایش کنید.
+# بهینه‌سازی SL/TP:  python run_michael_harris_backtest.py --optimize
 __author__ = "Alireza Sadabadi (converted by Control Center)"
 import sys
 
@@ -120,6 +120,7 @@ if len(trades) > 0:
     wr = 100 * (trades["PnL"] > 0).sum() / len(trades)
     print(f"Win Rate: {wr:.2f}%  |  Trades: {len(trades)}")
 
+
 # ------------------------- بهینه‌سازی (اختیاری) -------------------------
 if "--optimize" in sys.argv:
     print()
@@ -143,6 +144,7 @@ if "--optimize" in sys.argv:
         print("Heatmap saved: michael_harris_optimize_heatmap.png")
     except Exception as e:
         print("heatmap skipped:", e)
+
 
 if __name__ == "__main__":
     print()

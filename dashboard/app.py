@@ -4,10 +4,12 @@
 اینترفیس کامل کنترل ربات‌های معاملاتی و بک‌تست‌ها — ساخته‌شده با Streamlit
 اجرا:  streamlit run app.py
 """
+import re
 import sys
 from pathlib import Path
 
 import streamlit as st
+import streamlit.components.v1 as st_components
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -15,6 +17,8 @@ import catalog
 import runner
 import engines
 import sr_tools
+import editor
+import jupyter_utils
 from catalog import BOTS, LIBRARIES, NOTEBOOKS, CLAIMED_STATS
 from mt5_utils import MT5_AVAILABLE, mt5_status, fetch_rates, TIMEFRAMES, get_positions_df
 
@@ -152,6 +156,7 @@ def needs_label(bot):
         "pandas_ta": "pandas-ta",
         "internet": "اینترنت",
         "torch": "PyTorch",
+        "csv_bitcoin": "BitcoinH4.csv",
     }
     for n in bot.get("needs", []):
         labels.append(m.get(n, n))
@@ -179,6 +184,8 @@ page = st.sidebar.radio(
         "🏠 داشبورد",
         "🤖 ربات‌های زنده",
         "📈 بک‌تست",
+        "📓 Jupyter و نوت‌بوک‌ها",
+        "🗂️ فایل‌ها و ویرایشگر",
         "📊 آمار و وین‌ریت‌ها",
         "🧰 ابزارها",
         "⬇️ دانلود پکیج",
@@ -715,6 +722,327 @@ elif page == "📈 بک‌تست":
 
 
 # ===========================================================================
+# صفحه: Jupyter و نوت‌بوک‌ها
+# ===========================================================================
+elif page == "📓 Jupyter و نوت‌بوک‌ها":
+    header("اجرای نوت‌بوک‌های اصلی نویسنده — دقیقاً همان کد، روی دادهٔ خودتان")
+
+    st.markdown(
+        """<div class="info-box">💡 این صفحه <b>همان مدل بک‌تست و تحلیل‌های اصلی نویسنده</b> را بدون هیچ بازنویسی اجرا می‌کند:
+        ۱) سرور Jupyter را از همین‌جا بالا بیاورید و نوت‌بوک‌ها را مثل قبل اجرا کنید؛
+        ۲) یا دکمهٔ «اجرا» را بزنید تا نوت‌بوک در پس‌زمینه اجرا شود و خروجی‌اش همین‌جا نمایش داده شود؛
+        ۳) سلول‌های نوت‌بوک را (مثلاً برای تغییر نماد) قبل از اجرا ویرایش کنید.</div>""",
+        unsafe_allow_html=True,
+    )
+
+    # ------------------------------------------------------------- سرور Jupyter
+    st.markdown("### 🚀 سرور Jupyter")
+    jt1, jt2, jt3 = st.columns([2, 1, 1])
+    nb_avail = jupyter_utils.jupyter_available()
+    lab_avail = jupyter_utils.jupyterlab_available()
+    jt1.markdown(
+        f"**وضعیت پکیج‌ها:** notebook {'🟢 نصب' if nb_avail else '⚪ نصب نیست'} | "
+        f"jupyterlab {'🟢 نصب' if lab_avail else '⚪ نصب نیست (اختیاری)'}"
+    )
+    if not nb_avail:
+        jt1.caption(f"نصب: `{jupyter_utils.jupyter_install_hint()}`")
+
+    bind_all = st.toggle(
+        "دسترسی از شبکه/پیش‌نمایش (0.0.0.0) — برای استفادهٔ محلی لازم نیست",
+        value=(sys.platform != "win32"),
+        key="jup_bind",
+    )
+    use_lab = st.toggle("استفاده از JupyterLab (اگر نصب باشد)", value=False, key="jup_lab")
+    jc1, jc2, jc3 = st.columns(3)
+    if jupyter_utils.jupyter_server_running():
+        if jc1.button("⛔ توقف سرور Jupyter", type="primary", key="jup_stop"):
+            ok, msg = jupyter_utils.stop_jupyter()
+            st.toast(msg)
+            st.rerun()
+    else:
+        if jc1.button("▶️ اجرای سرور Jupyter", type="primary", key="jup_start",
+                      disabled=not (nb_avail or lab_avail)):
+            with st.spinner("در حال اجرای سرور Jupyter..."):
+                ok, msg = jupyter_utils.start_jupyter(bind_all=bind_all, lab=use_lab)
+            st.toast(msg)
+            st.rerun()
+    jc2.button("🔄 بروزرسانی وضعیت", key="jup_refresh", on_click=None)
+    if jc3.button("🧹 پاک‌کردن لاگ Jupyter", key="jup_clear"):
+        try:
+            jupyter_utils.JUPYTER_LOG_PATH.unlink(missing_ok=True)
+            st.rerun()
+        except OSError:
+            pass
+
+    if jupyter_utils.jupyter_server_running():
+        token_url = jupyter_utils.jupyter_token_url()
+        st.markdown(
+            """<div class="ok-box">✅ سرور Jupyter در حال اجراست — روی لینک زیر کلیک کنید تا در تب جدید باز شود:</div>""",
+            unsafe_allow_html=True,
+        )
+        if token_url:
+            st.markdown(f"### 🔗 [{token_url}]({token_url})")
+        else:
+            st.warning("سرور در حال بالا آمدن است؛ چند لحظه بعد «🔄 بروزرسانی وضعیت» را بزنید.")
+        urls = jupyter_utils.jupyter_urls()
+        if urls:
+            with st.expander("همهٔ آدرس‌های سرور"):
+                for u in urls:
+                    st.markdown(f"- [{u}]({u})")
+        # تلاش برای نمایش توکار Jupyter داخل خود اینترفیس
+        show_embed = st.toggle("🗂 نمایش Jupyter داخل همین صفحه (iframe)", value=False, key="jup_embed")
+        if show_embed and token_url:
+            st_components.iframe(token_url + "&redirects=1", height=720, scrolling=True)
+
+    with st.expander("📜 لاگ سرور Jupyter"):
+        st.markdown(f'<div class="log-box">{jupyter_utils.jupyter_log_tail(30)}</div>',
+                    unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # ------------------------------------------------------- اجرای نوت‌بوک‌ها
+    st.markdown("### 📓 نوت‌بوک‌های ریپازیتوری (اجرا / ویرایش سلول‌ها)")
+    st.caption("لیست به‌صورت خودکار از پوشهٔ code خوانده می‌شود — نوت‌بوک‌های آپدیت‌های بعدی نویسنده هم خودکار ظاهر می‌شوند.")
+
+    nbs = jupyter_utils.list_notebooks()
+    if not nbs:
+        st.info("هیچ نوت‌بوکی در پوشهٔ code پیدا نشد.")
+    else:
+        # ابزار آپلود داده برای نوت‌بوک‌های کلاسیک
+        with st.expander("📥 آماده‌سازی داده برای نوت‌بوک‌های نویسنده (آپلود CSV)"):
+            st.markdown(
+                """نوت‌بوک‌های زیر دادهٔ خود را از فایل‌های مشخصی می‌خوانند؛ فایل CSV کندل خود را آپلود کنید
+                تا دقیقاً در محل موردنظر نویسنده ذخیره شود و نوت‌بوک اصلی روی دادهٔ شما اجرا شود:"""
+            )
+            up1, up2, up3 = st.columns(3)
+            with up1:
+                f1 = st.file_uploader("Candles.csv — برای بک‌تست اسکالپر HA_RSI", type=["csv"], key="nb_candles")
+                if f1 is not None and st.button("ذخیره در code/Candles.csv", key="nb_save1"):
+                    (catalog.CODE_DIR / "Candles.csv").write_bytes(f1.getvalue())
+                    st.success("✅ ذخیره شد.")
+            with up2:
+                f2 = st.file_uploader("BitcoinH4.csv — برای بهینه‌ساز SMA", type=["csv"], key="nb_btc")
+                if f2 is not None and st.button("ذخیره در code/BitcoinH4.csv", key="nb_save2"):
+                    (catalog.CODE_DIR / "BitcoinH4.csv").write_bytes(f2.getvalue())
+                    st.success("✅ ذخیره شد.")
+            with up3:
+                f3 = st.file_uploader("EURUSDH4.csv — برای نوت‌بوک شیب اندیکاتورها", type=["csv"], key="nb_eur")
+                if f3 is not None and st.button("ذخیره در code/EURUSDH4.csv", key="nb_save3"):
+                    (catalog.CODE_DIR / "EURUSDH4.csv").write_bytes(f3.getvalue())
+                    st.success("✅ ذخیره شد.")
+            st.caption("💡 برای نوت‌بوک‌های MT5 (مایکل هریس، SP2L و...) داده مستقیم از متاتریدر گرفته می‌شود؛ فقط نماد را در سلول ابتدایی ویرایش کنید.")
+
+        sel_col, act_col = st.columns([2, 1])
+        nb_names = [f"{n['rel']}  {'⚠️MT5' if n['needs_mt5'] else ''}" for n in nbs]
+        choice = sel_col.selectbox("نوت‌بوک را انتخاب کنید", nb_names, key="nb_select")
+        nb = nbs[nb_names.index(choice)]
+
+        ac1, ac2 = act_col.columns(2)
+        if jupyter_utils.notebook_run_running():
+            ac1.caption("⏳ نوت‌بوکی در حال اجراست...")
+            if ac2.button("بروزرسانی", key="nb_run_refresh"):
+                st.rerun()
+        else:
+            if ac1.button("🚀 اجرای نوت‌بوک", type="primary", key="nb_run",
+                          disabled=not nb_avail):
+                ok, msg = jupyter_utils.run_notebook_async(nb["path"])
+                st.toast(msg)
+                st.rerun()
+
+        st.markdown(f"**{nb['name']}** — {nb['desc']}")
+        if nb["needs_mt5"]:
+            st.markdown(
+                """<div class="warn-box">⚠️ این نوت‌بوک به متاتریدر ۵ نیاز دارد — روی ویندوز شما با ترمینال باز کار می‌کند.</div>""",
+                unsafe_allow_html=True,
+            )
+
+        # خروجی‌ها (بعد از اجرا)
+        outs = jupyter_utils.notebook_outputs(nb["path"])
+        if outs:
+            with st.expander(f"📤 خروجی‌های آخرین اجرا ({len(outs)} سلول)", expanded=True):
+                for o in outs:
+                    st.markdown(f"**سلول {o['cell']}:** `{o['src']}`")
+                    st.code(o["output"][:2500], language="text")
+                    st.markdown("")
+
+        # ویرایش سلول‌ها
+        with st.expander("✏️ ویرایش سلول‌های نوت‌بوک (مثلاً تغییر نماد)"):
+            cells = jupyter_utils.get_cells(nb["path"])
+            cell_idx = st.selectbox(
+                "شمارهٔ سلول",
+                [f"{c['index']} ({c['type']}) — {c['source'][:45].replace(chr(10), ' ⏎ ')}" for c in cells],
+                key="nb_cell_sel",
+            )
+            ci = [c["index"] for c in cells][
+                [f"{c['index']} ({c['type']}) — {c['source'][:45].replace(chr(10), ' ⏎ ')}" for c in cells].index(cell_idx)
+            ]
+            current = next(c for c in cells if c["index"] == ci)["source"]
+            new_src = st.text_area("سورس سلول", current, height=220, key="nb_cell_src")
+            if st.button("💾 ذخیرهٔ سلول (با بکاپ)", type="primary", key="nb_cell_save"):
+                if new_src != current:
+                    jupyter_utils.save_cell_source(nb["path"], ci, new_src)
+                    st.success(f"✅ سلول {ci} ذخیره شد.")
+                    st.rerun()
+                else:
+                    st.info("تغییری اعمال نشده بود.")
+
+        with st.expander("📜 لاگ اجرای نوت‌بوک"):
+            st.markdown(f'<div class="log-box">{jupyter_utils.notebook_run_log_tail(40)}</div>',
+                        unsafe_allow_html=True)
+        nb_dl = nb["path"].read_bytes()
+        st.download_button("⬇️ دانلود این نوت‌بوک (همراه خروجی‌های آخرین اجرا)", nb_dl,
+                           nb["name"], "application/x-ipynb+json", key="nb_dl")
+
+# ===========================================================================
+# صفحه: فایل‌ها و ویرایشگر
+# ===========================================================================
+elif page == "🗂️ فایل‌ها و ویرایشگر":
+    header("مدیریت فایل‌ها، ویرایش نماد/حجم ربات‌ها و اجرای اسکریپت‌ها")
+
+    # ------------------------------------------------------ ویرایش نماد ربات‌ها
+    st.markdown("### 🏷️ ویرایش نماد و حجم معاملهٔ ربات‌ها")
+    st.caption("به‌جای دست‌بردن به کد، اینجا نماد و lot هر ربات را تغییر بده — تغییر با بکاپ امن روی فایل اصلی ذخیره می‌شود.")
+
+    bot_choice = st.selectbox(
+        "ربات",
+        [b["name"] for b in editor.SYMBOL_BOTS],
+        key="sym_bot",
+    )
+    sb = next(b for b in editor.SYMBOL_BOTS if b["name"] == bot_choice)
+    sb_path = catalog.CODE_DIR / sb["file"]
+    if not sb_path.exists():
+        st.warning(f"فایل {sb['file']} پیدا نشد — شاید نسخهٔ جدید نویسنده ساختار متفاوتی دارد؛ از ویرایشگر عمومی پایین صفحه استفاده کنید.")
+    else:
+        src = editor.read_text(sb_path)
+
+        if sb["kind"] in ("symbols_list", "const+symbols_list"):
+            parsed = editor.parse_symbols_list(src)
+            if parsed is None:
+                st.warning("بلوک symbols_list در فایل پیدا نشد؛ از ویرایشگر عمومی استفاده کنید.")
+            else:
+                st.markdown(f"**ورودی‌های فعلی** (فایل: `{sb['file']}`)")
+                rows = st.data_editor(
+                    [{"کلید": e["key"], "نماد": e["symbol"], "حجم (lot)": e["lot"]} for e in parsed["entries"]],
+                    num_rows="dynamic",
+                    key="sym_editor_table",
+                    width='stretch',
+                )
+                new_entries = [
+                    {"key": r["کلید"], "symbol": r["نماد"], "lot": r["حجم (lot)"]}
+                    for _, r in rows.iterrows()
+                ]
+                extra = {}
+                if sb["kind"] == "const+symbols_list":
+                    const = editor.parse_const(src, "SYMBOL")
+                    if const:
+                        new_const = st.text_input("مقدار SYMBOL (نماد اصلی این ربات)", const["value"], key="sym_const")
+                        extra = {"const_var": "SYMBOL", "const_value": new_const}
+                if st.button("💾 ذخیرهٔ تغییرات در فایل ربات", type="primary", key="sym_save"):
+                    ok, msg = editor.edit_bot_config(
+                        sb["file"], {"kind": sb["kind"], "entries": new_entries, **extra})
+                    if ok:
+                        st.success(msg)
+                        st.rerun()
+                    else:
+                        st.error(msg)
+        elif sb["kind"] == "symbol_var":
+            m = re.search(r"^symbol\s*=\s*['\"]([^'\"]*)['\"]", src, re.MULTILINE)
+            cur = m.group(1) if m else ""
+            new_sym = st.text_input("نماد (symbol)", cur, key="sym_var")
+            new_lot = st.number_input("حجم (lot)", 0.001, 100.0, 0.01, 0.001, key="sym_var_lot")
+            if st.button("💾 ذخیرهٔ تغییرات در فایل ربات", type="primary", key="sym_save2"):
+                src2 = src
+                if m:
+                    src2, ok1 = editor.apply_symbol_var(src2, new_sym)
+                    src2, ok2 = editor.apply_const(src2, "lot", str(new_lot))
+                    editor.backup_file(sb_path)
+                    editor.write_text(sb_path, src2, backup=False)
+                    st.success(f"✅ ذخیره شد: symbol='{new_sym}', lot={new_lot}")
+                    st.rerun()
+                else:
+                    st.error("متغیر symbol پیدا نشد.")
+
+    st.markdown("---")
+
+    # ------------------------------------------------------ سازگاری با آپدیت نویسنده
+    st.markdown("### 🔧 سازگاری با آپدیت‌های نویسنده")
+    st.caption("اگر پوشهٔ dashboard را داخل ریپوی جدید نویسنده کپی کردی، این‌جا مشکلات احتمالی خودکار پیدا و تعمیر می‌شود.")
+    issues = editor.repair_report()
+    if not issues:
+        st.markdown(
+            """<div class="ok-box">✅ همهٔ فایل‌های لازم موجود است — سازگار با ریپوی فعلی.</div>""",
+            unsafe_allow_html=True,
+        )
+    else:
+        for iss in issues:
+            st.markdown(f'<div class="warn-box">⚠️ {iss["text"]}</div>', unsafe_allow_html=True)
+        for iss in issues:
+            if iss["fixable"] and st.button(f"🛠 تعمیر: {iss['id']}", key=f"fix_{iss['id']}"):
+                ok, msg = editor.run_repair(iss["id"])
+                (st.success if ok else st.error)(msg)
+                st.rerun()
+
+    st.markdown("---")
+
+    # ------------------------------------------------------ ویرایشگر عمومی فایل
+    st.markdown("### 📂 مرور و ویرایش همهٔ فایل‌ها")
+    files = editor.list_repo_files()
+    fc1, fc2 = st.columns([2, 1])
+    file_labels = [f"{f['rel']}  ({f['size_kb']:.0f} KB)" for f in files]
+    fc_sel = fc1.selectbox("فایل", file_labels, key="file_sel")
+    f = files[file_labels.index(fc_sel)]
+    is_text = f["suffix"] in editor.TEXT_EXTS or f["suffix"] in {".py", ".md", ".txt"}
+    is_nb = f["suffix"] == ".ipynb"
+
+    fc2.markdown(f"**مسیر:** `{f['rel']}`")
+
+    if is_nb:
+        cells = jupyter_utils.get_cells(f["path"])
+        st.caption("این فایل نوت‌بوک است — ویرایش سلول‌هایش در صفحهٔ «📓 Jupyter» انجام می‌شود.")
+        with st.expander("پیش‌نمایش سلول‌ها"):
+            for c in cells[:12]:
+                st.markdown(f"**سلول {c['index']} ({c['type']})**")
+                st.code(c["source"][:600], language="python" if c["type"] == "code" else "markdown")
+        st.download_button("⬇️ دانلود این فایل", f["path"].read_bytes(), f["path"].name, key="file_dl_nb")
+    elif is_text:
+        content = editor.read_text(f["path"])
+        edited = st.text_area("محتوای فایل", content, height=380, key="file_content",
+                              label_visibility="collapsed")
+        bc1, bc2, bc3 = st.columns([1, 1, 2])
+        if bc1.button("💾 ذخیره", type="primary", key="file_save"):
+            if edited != content:
+                editor.write_text(f["path"], edited)
+                st.success("✅ ذخیره شد (بکاپ گرفته شد).")
+                st.rerun()
+            else:
+                st.info("تغییری نبود.")
+        st.download_button("⬇️ دانلود فایل", edited, f["path"].name, key="file_dl2")
+        if f["suffix"] == ".py":
+            if bc3.button("🚀 اجرای این اسکریپت (subprocess)", key="file_run"):
+                ok, msg = runner.start_script_direct(f["path"])
+                st.toast(msg)
+
+    # بکاپ‌ها
+    st.markdown("#### 🗄️ فایل‌های بکاپ")
+    bks = editor.list_backups()
+    if not bks:
+        st.caption("هنوز بکاپی وجود ندارد. با هر ذخیره/ویرایش، یک نسخهٔ پشتیبان این‌جا نگه داشته می‌شود.")
+    else:
+        with st.expander(f"بکاپ‌ها ({len(bks)})"):
+            for b in bks[:20]:
+                bc1, bc2 = st.columns([3, 1])
+                bc1.caption(str(b.name))
+                if bc2.button("بازگردانی", key=f"restore_{b.name}"):
+                    # بازگردانی به کنار فایل اصلی — با انتخاب کاربر
+                    st.session_state["restore_candidate"] = str(b)
+            if "restore_candidate" in st.session_state:
+                st.info(f"فایل بکاپ انتخاب‌شده: {st.session_state['restore_candidate']} — دانلودش کنید و در محل اصلی کپی کنید، یا از ویرایشگر عمومی محتوایش را جای‌گذاری کنید.")
+                st.download_button("⬇️ دانلود بکاپ انتخاب‌شده",
+                                   Path(st.session_state["restore_candidate"]).read_bytes(),
+                                   Path(st.session_state["restore_candidate"]).name,
+                                   key="bk_dl")
+
+# ===========================================================================
 # صفحه: آمار و وین‌ریت‌ها
 # ===========================================================================
 elif page == "📊 آمار و وین‌ریت‌ها":
@@ -1043,18 +1371,54 @@ elif page == "📖 راهنما":
     with st.expander("🚀 راه‌اندازی سریع (۵ دقیقه)", expanded=True):
         st.markdown(
             """
-**روی ویندوز (برای همهٔ امکانات):**
-1. پایتون **3.12** نصب کنید (چون pandas-ta فقط با 3.12+ نصب می‌شود)
-2. پکیج ZIP را از صفحهٔ «⬇️ دانلود» بگیرید و باز کنید
+**روی ویندوز ۱۱ (برای همهٔ امکانات):**
+1. پایتون **3.12** از python.org نصب کنید (گزینهٔ **Add python.exe to PATH** را فعال کنید)
+2. پکیج ZIP را از صفحهٔ «⬇️ دانلود» بگیرید و استخراج کنید
 3. `pip install -r requirements.txt`
 4. ترمینال MetaTrader 5 را باز کنید و به حساب (ترجیحاً **دمو**) لاگین کنید
 5. `streamlit run dashboard/app.py`
 6. در صفحهٔ «ربات‌های زنده» دکمهٔ اجرای هر ربات را بزنید؛ لاگ زنده را همان‌جا ببینید
 
 **بدون متاتریدر (هر سیستم‌عاملی):**
-- بک‌تست‌های «مارکوف» و «لوریج SPY→UPRO» فقط اینترنت می‌خواهند (yfinance)
+- بک‌تست‌های «مارکوف» و «لوریج SPY→UPRO» فقط اینترنت می‌خواهند (yfinance) یا CSV آپلود کنید
 - بک‌تست «اسکالپر HA_RSI» و «بهینه‌ساز SMA» با آپلود فایل CSV کندل کار می‌کنند
 - ربات «تحلیل احساسات اخبار» هم مستقل از متاتریدر است
+"""
+        )
+
+    with st.expander("📓 Jupyter داخل اینترفیس"):
+        st.markdown(
+            """
+- صفحهٔ «📓 Jupyter و نوت‌بوک‌ها» سرور Jupyter را **از خود اینترفیس** بالا می‌آورد (`pip install notebook` اگر نصب نیست)
+- سه حالت اجرا:
+  ۱) **سرور Jupyter** — دکمهٔ اجرا؛ لینک با توکن نمایش داده می‌شود (قابل نمایش داخل صفحه با iframe)
+  ۲) **اجرای نوت‌بوک در پس‌زمینه** — دکمهٔ «🚀 اجرای نوت‌بوک»: نوت‌بوک اصلی نویسنده بدون هیچ تغییری اجرا و خروجی‌هایش در همین صفحه نمایش داده می‌شود
+  ۳) **ویرایش سلول‌ها** — قبل از اجرا، سلول دلخواه (مثلاً سلول نماد CARDANO در مایکل هریس یا XAUUSD در SP2L) را ویرایش کنید؛ با بکاپ امن
+- برای اجرای نوت‌بوک اسکالپر روی دادهٔ خودتان: CSV کندل M1 را در همان صفحه آپلود کنید تا در `code/Candles.csv` ذخیره شود — نوت‌بوک اصلی دقیقاً همان کد نویسنده را روی دادهٔ شما اجرا می‌کند
+"""
+        )
+
+    with st.expander("🏷️ تغییر نماد/حجم ربات‌ها بدون کدنویسی"):
+        st.markdown(
+            """
+- صفحهٔ «🗂️ فایل‌ها و ویرایشگر» ← بخش «ویرایش نماد و حجم»
+- همهٔ ۱۱ ربات قابل ویرایش: جدول نماد/حجم را تغییر بده، سطر اضافه/حذف کن، ذخیره کن
+- از هر تغییر، **بکاپ خودکار** در `dashboard/backups/` نگه داشته می‌شود
+- ویرایشگر عمومی فایل هم برای دست‌بردن به هر فایل دیگری موجود است (+ اجرای مستقیم اسکریپت‌ها)
+"""
+        )
+
+    with st.expander("🔄 وقتی نویسنده نسخهٔ جدید ریپو را منتشر کرد"):
+        st.markdown(
+            """
+این اینترفیس طوری طراحی شده که **پوشهٔ dashboard را داخل ریپوی جدید نویسنده کپی کنی و همان‌جا کار کند**:
+1. ریپوی جدید نویسنده را دانلود/clone کن
+2. فقط پوشهٔ `dashboard` (و در صورت نیاز `requirements.txt`) را داخل آن کپی کن
+3. `streamlit run dashboard/app.py`
+4. صفحهٔ «🗂️ فایل‌ها و ویرایشگر» ← بخش «سازگاری با آپدیت‌های نویسنده» مشکلات احتمالی را خودکار پیدا می‌کند:
+   - نبودن `Meta.py` در code/ ← یک کلیک: کپی از SP2L (+ دو اصلاح کوچک باگ)
+   - نبودن اسکریپت‌های اجرای بک‌تست ← یک کلیک: **از نوت‌بوک‌های جدید خود نویسنده** دوباره تولید می‌شوند
+5. لیست نوت‌بوک‌ها در صفحهٔ Jupyter **خودکار از پوشهٔ code خوانده می‌شود** — نوت‌بوک‌های جدید نویسنده بدون هیچ تغییری ظاهر و اجرا می‌شوند
 """
         )
 

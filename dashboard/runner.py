@@ -102,6 +102,29 @@ def log_append(bot_id, text):
         pass
 
 
+def start_script_direct(script_path):
+    """اجرای مستقیم یک اسکریپت .py دلخواه (برای ویرایشگر فایل‌ها)"""
+    script_path = Path(script_path)
+    if not script_path.exists():
+        return False, f"فایل یافت نشد: {script_path}"
+    log_id = "script_" + script_path.stem.lower()[:20]
+    log_path = LOGS_DIR / f"{log_id}.log"
+    log_file = open(log_path, "ab")
+    log_file.write(f"\n{'=' * 60}\n[{time.strftime('%Y-%m-%d %H:%M:%S')}] RUN {script_path.name}\n{'=' * 60}\n".encode("utf-8"))
+    try:
+        proc = subprocess.Popen(
+            [sys.executable, "-u", script_path.name],
+            cwd=str(script_path.parent),
+            stdout=log_file, stderr=subprocess.STDOUT,
+            stdin=subprocess.DEVNULL,
+        )
+    except Exception as e:
+        log_file.close()
+        return False, f"خطا در اجرا: {e}"
+    _PROCS[log_id] = proc
+    return True, f"«{script_path.name}» اجرا شد (PID {proc.pid}) — لاگ: {log_path.name}"
+
+
 def read_log(bot_id, tail=80):
     """آخرین خطوط لاگ ربات"""
     path = log_path(bot_id)
