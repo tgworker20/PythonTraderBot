@@ -6,6 +6,7 @@
 """
 import re
 import sys
+import zipfile
 from pathlib import Path
 
 import streamlit as st
@@ -1319,10 +1320,26 @@ elif page == "⬇️ دانلود پکیج":
 
     if zip_path and zip_path.exists():
         info = build_toolkit.zip_info()
+        build_time = build_toolkit.zip_build_time()
+        # راستی‌آزمایی زندهٔ محتوای ZIP — همین الان، قبل از دانلود
+        with zipfile.ZipFile(zip_path) as zf:
+            names = set(zf.namelist())
+        portable_files = ["run.bat", "install.bat", "run_portable.bat",
+                          "install_python_portable.ps1", "requirements.txt", "BUILD_INFO.txt"]
+        ok_all = all(f in names for f in portable_files)
         st.markdown(
-            f"""<div class="ok-box">✅ پکیج آماده است — <b>{info['files']:,} فایل</b> | حجم ≈ <b>{info['size_mb']:.2f} MB</b></div>""",
+            f"""<div class="ok-box">✅ پکیج آماده است — <b>{info['files']:,} فایل</b> | حجم ≈ <b>{info['size_mb']:.2f} MB</b>
+            {'| بیلد: <b>' + build_time + '</b>' if build_time else ''}<br>
+            {'✅ فایل‌های پکیج پرتابل (install.bat، run_portable.bat، install_python_portable.ps1) داخل ZIP هستند'
+             if ok_all else '⚠️ فایل‌های پکیج پرتابل داخل ZIP پیدا نشدند — دکمهٔ «بروزرسانی پکیج ZIP» را بزنید'}</div>""",
             unsafe_allow_html=True,
         )
+        with st.expander("🔍 محتوای ZIP را همین‌جا ببینید (بدون دانلود)"):
+            hit = [f for f in portable_files if f in names]
+            st.markdown(
+                "**فایل‌های ریشهٔ ZIP:** " + "، ".join(f"`{f}` {'✅' if f in hit else '❌'}" for f in portable_files)
+            )
+            st.caption(f"مجموع {info['files']:,} فایل — بعد از دانلود می‌توانید فایل BUILD_INFO.txt داخل ZIP را باز کنید و زمان بیلد را چک کنید.")
         with open(zip_path, "rb") as f:
             st.download_button(
                 "⬇️ دانلود PythonTraderBot_ControlCenter.zip",
@@ -1332,6 +1349,7 @@ elif page == "⬇️ دانلود پکیج":
                 width='stretch',
                 type="primary",
             )
+        st.caption("💡 اگر قبلاً ZIP را دانلود کرده‌اید، نسخهٔ قدیمی ممکن است در کش مرورگر مانده باشد — دوباره دانلود کنید (Ctrl+F5) و داخل ZIP فایل BUILD_INFO.txt را چک کنید.")
 
     st.markdown("---")
     st.markdown("### 🧰 پکیج پایتون پرتابل (بدون نصب پایتون روی سیستم)")
