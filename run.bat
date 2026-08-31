@@ -1,21 +1,21 @@
 @echo off
 rem ============================================================
-rem   PythonTraderBot Control Center - Windows Launcher
-rem   اجرای مرکز کنترل روی ویندوز ۱۱
-rem   ۱) پایتون را پیدا می‌کند  ۲) نصب بودن requirements.txt را چک می‌کند
-rem   ۳) در صورت نیاز نصب می‌کند  ۴) اینترفیس را اجرا می‌کند
+rem   PythonTraderBot Control Center - Launcher
+rem   1) Finds Python (python / py -3)
+rem   2) Checks that requirements.txt packages are installed
+rem   3) Installs them if missing
+rem   4) Starts the interface (Streamlit)
 rem ============================================================
-chcp 65001 >nul
 title PythonTraderBot Control Center
 cd /d "%~dp0"
 
 echo ==================================================
 echo      PythonTraderBot Control Center
-echo      راه‌انداز مرکز کنترل (ویندوز)
+echo      Streamlit Interface Launcher
 echo ==================================================
 echo.
 
-rem ------------------- ۱) پیدا کردن پایتون -------------------
+rem ------------------- 1) find python -------------------
 set "PYCMD=python"
 python -c "import sys" >nul 2>nul
 if not errorlevel 1 goto :pyok
@@ -25,28 +25,31 @@ set "PYCMD=py -3"
 if errorlevel 1 goto :nopy
 
 :pyok
-echo [1/4] پایتون پیدا شد:
+echo [1/4] Python found:
 %PYCMD% --version
 echo.
 goto :checkreq
 
 :nopy
-echo [خطا] پایتون پیدا نشد / Python not found
+echo [ERROR] Python not found.
 echo.
-echo        پایتون 3.12 را از https://www.python.org/downloads/ نصب کنید
-echo        و حتما تیک "Add python.exe to PATH" را موقع نصب بزنید.
+echo        Install Python 3.12 or newer from https://www.python.org/downloads/
+echo        and make sure "Add python.exe to PATH" is checked during install.
+echo.
+echo        (Alternative: use install.bat to set up a portable Python
+echo         inside this folder - no system installation needed.)
 echo.
 pause
 exit /b 1
 
-rem --------------- ۲) چک نصب requirements.txt ---------------
+rem --------------- 2) check requirements.txt ---------------
 :checkreq
-echo [2/4] بررسی نصب پکیج‌های موردنیاز ...
+echo [2/4] Checking required packages ...
 %PYCMD% -c "import streamlit, pandas, numpy, ta, backtesting, yfinance, plotly, matplotlib, seaborn, scipy, sklearn, xgboost, joblib, colorama, tqdm, requests, feedparser, bs4, vaderSentiment, notebook, nbconvert" >nul 2>nul
 if not errorlevel 1 goto :reqok
 
-echo        بعضی پکیج‌ها نصب نیستند — نصب از requirements.txt ...
-echo        (چند دقیقه طول می‌کشد؛ به اینترنت نیاز دارد)
+echo        Some packages are missing - installing from requirements.txt ...
+echo        (this may take several minutes and needs an internet connection)
 echo.
 %PYCMD% -m pip install -r requirements.txt
 if errorlevel 1 goto :pipfail
@@ -54,36 +57,37 @@ echo.
 goto :checkta
 
 :reqok
-echo        همهٔ پکیج‌های موردنیاز نصب هستند.
+echo        All required packages are installed.
 echo.
 goto :checkta
 
 :pipfail
 echo.
-echo [خطا] نصب پکیج‌ها ناموفق بود. اتصال اینترنت را بررسی کنید.
-echo        دستور اجرای دستی:  python -m pip install -r requirements.txt
+echo [ERROR] pip install failed. Check your internet connection.
+echo         Manual command:  python -m pip install -r requirements.txt
 echo.
 pause
 exit /b 1
 
-rem ---------- ۳) بررسی اختیاری pandas-ta (پایتون ۳.۱۲) ----------
+rem ---------- 3) optional pandas-ta (Python 3.12+) ----------
 :checkta
 %PYCMD% -c "import pandas_ta" >nul 2>nul
 if errorlevel 1 (
-    echo [توجه] pandas-ta نصب نیست.
-    echo        فقط برای ربات‌های TraderBot و CE_ZLSMA لازم است و پایتون 3.12+ می‌خواهد.
-    echo        نصب دستی:  python -m pip install pandas-ta
+    echo [NOTE] pandas-ta is not installed.
+    echo        It is only needed for the TraderBot / CE_ZLSMA bots
+    echo        and requires Python 3.12 or newer.
+    echo        Install it with:  python -m pip install pandas-ta
     echo.
 )
 
-rem ------------------- ۴) اجرای اینترفیس -------------------
-echo [3/4] در حال اجرای اینترفیس ...
-echo        مرورگر به‌زودی روی http://localhost:8501 باز می‌شود.
-echo        این پنجره را باز نگه دارید — برای توقف Ctrl+C بزنید.
+rem ------------------- 4) start interface -------------------
+echo [3/4] Starting the interface ...
+echo        The browser will open at http://localhost:8501
+echo        Keep this window open - press Ctrl+C here to stop.
 echo.
-echo [4/4] اجرا ...
+echo [4/4] Launching ...
 %PYCMD% -m streamlit run dashboard/app.py
 
 echo.
-echo اینترفیس متوقف شد.
+echo Interface stopped.
 pause

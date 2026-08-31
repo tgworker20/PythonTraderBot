@@ -11,7 +11,9 @@ EXCLUDE_DIRS = {"myenv", "__pycache__", ".git", ".ipynb_checkpoints", "logs",
                 "toolkit", ".streamlit", ".cache", "build", "dist"}
 EXCLUDE_FILES = {".gitignore", ".DS_Store"}
 EXCLUDE_SUFFIX = {".pyc", ".pyo", ".exe", ".zip", ".log", ".pptx"}
-INCLUDE_ROOT_FILES = {"requirements.txt", "README.md", "LICENSE", "START_HERE_FA.md", "run.bat"}
+INCLUDE_ROOT_FILES = {"requirements.txt", "README.md", "LICENSE", "START_HERE_FA.md",
+                      "run.bat", "install.bat", "run_portable.bat",
+                      "install_python_portable.ps1"}
 
 
 def _iter_files():

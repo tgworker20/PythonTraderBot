@@ -1,31 +1,36 @@
 # =========================================================================
 # PythonTraderBot Control Center — requirements
-# نصب:  pip install -r requirements.txt
-# نکته: پیشنهاد پایتون 3.12 (برای نصب pandas-ta لازم است)
+# Install:  pip install -r requirements.txt
+#           (or just double-click install.bat / run.bat on Windows)
+#
+# Compatible with Python 3.12+ and the portable Python 3.14.3 embeddable
+# created by install_python_portable.ps1
 # =========================================================================
 
-# --- اینترفیس (Streamlit) ---
+# --- Interface (Streamlit) ---
 streamlit>=1.36
 
-# --- Jupyter (اجرای نوت‌بوک‌های نویسنده از داخل اینترفیس) ---
+# --- Jupyter (running the author's notebooks from inside the interface) ---
 notebook>=7.0
 nbconvert>=7.0
-# jupyterlab>=4.0   # اختیاری — اگر JupyterLab را ترجیح می‌دهید
+# jupyterlab>=4.0   # optional - if you prefer JupyterLab
 
-# --- هستهٔ داده ---
-pandas>=2.0
+# --- Data core ---
+# pandas is pinned below 3.0 on purpose: the author's bots were written
+# and tested against the pandas 2.x API.
+pandas>=2.0,<3.0
 numpy>=1.24
 
-# --- اندیکاتورها ---
+# --- Indicators ---
 ta>=0.11
-# pandas-ta فقط برای پایتون >= 3.12 در PyPI موجود است
+# pandas-ta needs Python >= 3.12 (all its releases are pre-releases)
 pandas-ta>=0.4.67b0 ; python_version >= "3.12"
 
-# --- بک‌تست ---
+# --- Backtesting ---
 backtesting>=0.3.3
 yfinance>=0.2.40
 
-# --- یادگیری ماشین / تحلیل ---
+# --- Machine learning / analysis ---
 scikit-learn>=1.3
 xgboost>=2.0
 joblib>=1.3
@@ -34,20 +39,21 @@ matplotlib>=3.8
 seaborn>=0.13
 plotly>=5.18
 
-# --- اجرای ربات‌ها ---
+# --- Bot runtime ---
 requests>=2.31
 colorama>=0.4
 tqdm>=4.66
-# پکیج متاتریدر فقط روی ویندوز نصب می‌شود (روی لینوکس/مک نادیده گرفته می‌شود)
+# MetaTrader5 package only installs on Windows (skipped on Linux/macOS)
 MetaTrader5>=5.0.45 ; sys_platform == "win32"
 
-# --- تحلیل احساسات اخبار ---
+# --- News sentiment analysis ---
 feedparser>=6.0
 beautifulsoup4>=4.12
 vaderSentiment>=3.3
 playwright>=1.40
-# فعال‌سازی اختیاری مرورگر برای تحلیل متن کامل اخبار:  python -m playwright install chromium
+# Optional: enable browser-based full article analysis:
+#   python -m playwright install chromium
 
-# --- اختیاری: مدل FinBERT (سنگین — حدود ۲ گیگابایت) ---
+# --- Optional: FinBERT model (heavy - about 2 GB) ---
 # transformers>=4.40
 # torch>=2.2

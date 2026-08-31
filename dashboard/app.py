@@ -1334,6 +1334,28 @@ elif page == "⬇️ دانلود پکیج":
             )
 
     st.markdown("---")
+    st.markdown("### 🧰 پکیج پایتون پرتابل (بدون نصب پایتون روی سیستم)")
+    st.markdown(
+        """<div class="info-box">این کیت کوچک شامل <code>install.bat</code> + اسکریپت PowerShell است که
+        <b>پایتون 3.14.3 پرتابل (embeddable)</b> را داخل پوشهٔ برنامه دانلود می‌کند، pip را همان‌جا نصب می‌کند
+        و بعد requirements.txt را — هیچ تغییری در سیستم شما ایجاد نمی‌شود؛ برای حذف هم فقط پوشهٔ
+        <code>python</code> را پاک کنید. سپس با <code>run_portable.bat</code> برنامه را اجرا کنید.</div>""",
+        unsafe_allow_html=True,
+    )
+    portable_zip = catalog.REPO_ROOT / "download" / "PythonTraderBot_PortableKit.zip"
+    if portable_zip.exists():
+        with open(portable_zip, "rb") as f:
+            st.download_button(
+                "⬇️ دانلود PythonTraderBot_PortableKit.zip",
+                f.read(),
+                portable_zip.name,
+                "application/zip",
+                use_container_width=True,
+            )
+    else:
+        st.caption("فایل پکیج پرتابل در download/ یافت نشد.")
+
+    st.markdown("---")
     st.markdown("### فایل‌های تک‌به‌تک")
 
     req_path = catalog.REPO_ROOT / "requirements.txt"
@@ -1352,19 +1374,21 @@ elif page == "⬇️ دانلود پکیج":
     st.markdown(
         """
 ```
-سریع‌ترین راه (ویندوز):
-1) فایل ZIP را استخراج کنید
-2) روی run.bat دابل‌کلیک کنید —
-   خودش پایتون را چک می‌کند، پکیج‌های غایب را از requirements.txt
-   نصب می‌کند و بعد اینترفیس را اجرا می‌کند
+راه ۱ — نصب سیستمی:
+1) پایتون 3.12+ را نصب کنید (python.org)
+2) ZIP را استخراج کنید
+3) روی run.bat دابل‌کلیک کنید — چک/نصب requirements + اجرا
 
-راه دستی:
-1) پایتون 3.12 را نصب کنید (برای pandas-ta لازم است)  → python.org
-2) فایل ZIP را باز کنید و در یک پوشه استخراج نمایید
-3) در همان پوشه:        pip install -r requirements.txt
-4) برای ربات‌های متاتریدر: متاتریدر ۵ را نصب و لاگین کنید (فقط ویندوز)
-5) اجرای اینترفیس:      streamlit run dashboard/app.py
-6) مرورگر:              http://localhost:8501
+راه ۲ — پایتون پرتابل (بدون نصب هیچ‌چیز روی سیستم):
+1) ZIP اصلی + پکیج PortableKit را استخراج کنید (کنار هم)
+2) روی install.bat دابل‌کلیک کنید —
+   دانلود پایتون 3.14.3 پرتابل + pip + نصب requirements داخل پوشهٔ python
+3) روی run_portable.bat دابل‌کلیک کنید — اجرای برنامه با پایتون پرتابل
+
+راه ۳ — دستی:
+1) pip install -r requirements.txt
+2) streamlit run dashboard/app.py
+3) مرورگر: http://localhost:8501
 ```
 """
     )
