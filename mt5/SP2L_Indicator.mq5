@@ -25,7 +25,7 @@
 //+------------------------------------------------------------------+
 #property copyright   "SP2L strategy by Alireza Sadabadi - MQL5 port for PythonTraderBot Control Center"
 #property link        "https://youtube.com/@alirezasadabadi"
-#property version     "1.00"
+#property version     "1.01"
 #property description "SP2L (Spike + Pullback + Gap) signals with SL / TP levels - exact port of the author's Python strategy"
 #property indicator_chart_window
 #property indicator_buffers 5
@@ -197,7 +197,7 @@ void CreateLabel(const string tag, const datetime t, const double price,
 //+------------------------------------------------------------------+
 bool EmaValueAt(const int shift, double &value)
   {
-   double tmp[1];
+   double tmp[];
    if(gEmaHandle == INVALID_HANDLE)
       return false;
    if(CopyBuffer(gEmaHandle, 0, shift, 1, tmp) != 1)
@@ -211,7 +211,7 @@ bool EmaValueAt(const int shift, double &value)
 //+------------------------------------------------------------------+
 bool AdxValueAt(const int shift, double &value)
   {
-   double tmp[1];
+   double tmp[];
    if(gAdxHandle == INVALID_HANDLE)
       return false;
    if(CopyBuffer(gAdxHandle, 0, shift, 1, tmp) != 1)
@@ -698,7 +698,7 @@ int OnCalculate(const int rates_total,
                 const double &high[],
                 const double &low[],
                 const double &close[],
-                const int &tick_volume[],
+                const long &tick_volume[],
                 const long &volume[],
                 const int &spread[])
   {
