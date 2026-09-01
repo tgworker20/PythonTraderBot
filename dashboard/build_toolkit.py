@@ -23,7 +23,7 @@ def _iter_files():
         if f.is_file() and f.name in INCLUDE_ROOT_FILES:
             yield f, f.name
     # پوشه‌های اصلی
-    for folder in ["code", "dashboard", "mt5"]:
+    for folder in ["code", "dashboard", "mt4", "mt5"]:
         base = REPO_ROOT / folder
         if not base.exists():
             continue

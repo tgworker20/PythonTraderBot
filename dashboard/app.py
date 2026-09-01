@@ -1558,23 +1558,35 @@ elif page == "⬇️ دانلود پکیج":
                                "START_HERE_FA.md", "text/markdown", width='stretch')
 
     mq5_path = catalog.REPO_ROOT / "mt5" / "SP2L_Indicator.mq5"
+    mq4_path = catalog.REPO_ROOT / "mt4" / "SP2L_Indicator.mq4"
     mq5_readme = catalog.REPO_ROOT / "mt5" / "README_SP2L_Indicator_EN.md"
-    if mq5_path.exists():
-        st.markdown("### 🥇 اندیکاتور MT5 استراتژی SP2L (MQL5)")
+    mq4_readme = catalog.REPO_ROOT / "mt4" / "README_SP2L_Indicator_MT4_EN.md"
+    if mq5_path.exists() or mq4_path.exists():
+        st.markdown("### 🥇 اندیکاتور MT4/MT5 استراتژی SP2L")
         st.markdown(
             """<div class="info-box">پورت دقیق استراتژی SP2L نویسنده (هر دو نسخهٔ ساده و پیشرفته با
-            همهٔ فیلترها) به یک اندیکاتور متاتریدر ۵ — روی چارت، محل <b>ورود، SL و TP</b> را دقیقاً مثل ربات پایتون
-            نشان می‌دهد. فایل را در پوشهٔ <code>MQL5\\Indicators</code> کپی و در MetaEditor کامپایل (F7) کنید —
-            راهنمای کامل انگلیسی کنارش هست.</div>""",
+            همهٔ فیلترها) به یک اندیکاتور متاتریدر — در دو نسخهٔ <b>MT5 (MQL5)</b> و <b>MT4 (MQL4)</b>.
+            روی چارت، محل <b>ورود، SL و TP</b> را دقیقاً مثل ربات پایتون نشان می‌دهد. فایل را در پوشهٔ
+            <code>MQL5\\Indicators</code> (یا <code>MQL4\\Indicators</code>) کپی و در MetaEditor کامپایل (F7) کنید —
+            راهنمای کامل انگلیسی کنارشان هست.</div>""",
             unsafe_allow_html=True,
         )
-        c_m1, c_m2 = st.columns(2)
-        with open(mq5_path, "rb") as f:
-            c_m1.download_button("⬇️ SP2L_Indicator.mq5", f.read(), "SP2L_Indicator.mq5",
-                                 "text/plain", width='stretch', type="primary")
+        c_m1, c_m2, c_m3, c_m4 = st.columns(4)
+        if mq5_path.exists():
+            with open(mq5_path, "rb") as f:
+                c_m1.download_button("⬇️ نسخهٔ MT5 (.mq5)", f.read(), "SP2L_Indicator.mq5",
+                                     "text/plain", width='stretch', type="primary")
+        if mq4_path.exists():
+            with open(mq4_path, "rb") as f:
+                c_m2.download_button("⬇️ نسخهٔ MT4 (.mq4)", f.read(), "SP2L_Indicator.mq4",
+                                     "text/plain", width='stretch', type="primary")
         if mq5_readme.exists():
             with open(mq5_readme, "rb") as f:
-                c_m2.download_button("⬇️ README (EN)", f.read(), "README_SP2L_Indicator_EN.md",
+                c_m3.download_button("⬇️ راهنمای MT5 (EN)", f.read(), "README_SP2L_Indicator_EN.md",
+                                     "text/markdown", width='stretch')
+        if mq4_readme.exists():
+            with open(mq4_readme, "rb") as f:
+                c_m4.download_button("⬇️ راهنمای MT4 (EN)", f.read(), "README_SP2L_Indicator_MT4_EN.md",
                                      "text/markdown", width='stretch')
 
     st.markdown("### 🔧 مراحل نصب روی سیستم خودتان")

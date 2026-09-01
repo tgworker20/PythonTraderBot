@@ -20,7 +20,9 @@ download/*
 !download/index.html
 !download/*.zip
 !download/SP2L_Indicator.mq5
+!download/SP2L_Indicator.mq4
 !download/README_SP2L_Indicator_EN.md
+!download/README_SP2L_Indicator_MT4_EN.md
 !download/run.bat
 !download/requirements.txt
 !download/START_HERE_FA.md
