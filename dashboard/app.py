@@ -1557,6 +1557,26 @@ elif page == "⬇️ دانلود پکیج":
             st.download_button("⬇️ راهنمای فارسی (START_HERE_FA.md)", f.read(),
                                "START_HERE_FA.md", "text/markdown", width='stretch')
 
+    mq5_path = catalog.REPO_ROOT / "mt5" / "SP2L_Indicator.mq5"
+    mq5_readme = catalog.REPO_ROOT / "mt5" / "README_SP2L_Indicator_EN.md"
+    if mq5_path.exists():
+        st.markdown("### 🥇 اندیکاتور MT5 استراتژی SP2L (MQL5)")
+        st.markdown(
+            """<div class="info-box">پورت دقیق استراتژی SP2L نویسنده (هر دو نسخهٔ ساده و پیشرفته با
+            همهٔ فیلترها) به یک اندیکاتور متاتریدر ۵ — روی چارت، محل <b>ورود، SL و TP</b> را دقیقاً مثل ربات پایتون
+            نشان می‌دهد. فایل را در پوشهٔ <code>MQL5\\Indicators</code> کپی و در MetaEditor کامپایل (F7) کنید —
+            راهنمای کامل انگلیسی کنارش هست.</div>""",
+            unsafe_allow_html=True,
+        )
+        c_m1, c_m2 = st.columns(2)
+        with open(mq5_path, "rb") as f:
+            c_m1.download_button("⬇️ SP2L_Indicator.mq5", f.read(), "SP2L_Indicator.mq5",
+                                 "text/plain", width='stretch', type="primary")
+        if mq5_readme.exists():
+            with open(mq5_readme, "rb") as f:
+                c_m2.download_button("⬇️ README (EN)", f.read(), "README_SP2L_Indicator_EN.md",
+                                     "text/markdown", width='stretch')
+
     st.markdown("### 🔧 مراحل نصب روی سیستم خودتان")
     st.markdown(
         """
