@@ -327,6 +327,13 @@ elif page == "🤖 ربات‌های زنده":
             continue
         run = runner.is_running(bot["id"])
         pinfo = runner.process_info(bot["id"])
+        # متن سادهٔ وضعیت برای برچسب expander (HTML در برچسب ویجت‌ها رندر نمی‌شود)
+        state_text = (
+            f"در حال اجرا (PID {pinfo['pid']})" if run
+            else ("متوقف" + (
+                f" — کد خروج {pinfo['returncode']}" if pinfo.get("returncode") is not None else ""))
+        )
+        # pillهای رنگی — داخل بدنهٔ expander با unsafe_allow_html رندر می‌شوند
         state_html = (
             f'<span class="pill pill-run">🟢 در حال اجرا (PID {pinfo["pid"]})</span>' if run
             else ('<span class="pill pill-stop">⚪ متوقف' + (
@@ -338,7 +345,8 @@ elif page == "🤖 ربات‌های زنده":
             c = bot["claimed"]
             claim_html = f'<span class="pill pill-ok">🏆 {c["metric"]}: {c["value"]}</span>'
 
-        with st.expander(f"{'🟢' if run else '⚙️'} {bot['name']} — {state_html} &nbsp; {claim_html}", expanded=run):
+        with st.expander(f"{'🟢' if run else '⚪'} {bot['name']} — {state_text}", expanded=run):
+            st.markdown(f"{state_html} &nbsp; {claim_html}", unsafe_allow_html=True)
             m1, m2, m3, m4 = st.columns(4)
             m1.markdown(f"**فایل:** `{bot['folder'] + '/' if bot['folder'] else ''}{bot['file']}`")
             m2.markdown(f"**تایم‌فریم:** {bot['timeframe']}")
