@@ -12,8 +12,17 @@
     Everything stays inside the program folder. To remove it later,
     simply delete the "python" folder.
 
+    NOTE ON THE DEFAULT VERSION (3.13.15): pandas-ta (needed by the
+    TraderBot / CE_ZLSMA bots) depends on numba, and numba currently
+    supports Python 3.10 - 3.13 only. On Python 3.14 the requirements
+    install would fail. Use -PythonVersion 3.14.3 only if you do not
+    need pandas-ta (it is then skipped automatically).
+
+    If the existing portable Python has a DIFFERENT version than the
+    requested one, it is removed and reinstalled automatically.
+
 .PARAMETER PythonVersion
-    Python version to download. Default: 3.14.3
+    Python version to download. Default: 3.13.15
 
 .PARAMETER InstallDir
     Target folder for the portable Python. Default: .\python (next to this script)
@@ -23,12 +32,12 @@
 
 .EXAMPLE
     .\install_python_portable.ps1
-    .\install_python_portable.ps1 -PythonVersion 3.13.15
+    .\install_python_portable.ps1 -PythonVersion 3.14.3
     .\install_python_portable.ps1 -Force
 #>
 
 param(
-    [string]$PythonVersion = "3.14.3",
+    [string]$PythonVersion = "3.13.15",
     [string]$InstallDir = "",
     [switch]$Force
 )
@@ -87,7 +96,7 @@ function Download-File {
 
 Write-Host "==================================================" -ForegroundColor DarkCyan
 Write-Host "   PythonTraderBot Control Center"                    -ForegroundColor White
-Write-Host "   Portable Python $PythonVersion Installer"               -ForegroundColor White
+Write-Host "   Portable Python $PythonVersion Installer"          -ForegroundColor White
 Write-Host "==================================================" -ForegroundColor DarkCyan
 
 # ---------------------------------------------------------------- checks ----
@@ -100,13 +109,27 @@ if (-not (Test-Path $RequirementsTxt)) {
 # ------------------------------------------------- 1) portable python -------
 Step "Step 1/4 - Portable Python ($PythonVersion embeddable, 64-bit)"
 
+$ExistingVersion = ""
+if (Test-Path $PythonExe) {
+    # ask the existing portable python which version it is
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try { $ExistingVersion = ((& $PythonExe --version) 2>$null | Out-String).Trim() } catch { $ExistingVersion = "" }
+    finally { $ErrorActionPreference = $prev }
+}
+
 if ((Test-Path $PythonExe) -and $Force) {
     Info "Removing existing portable Python (-Force) ..."
+    Remove-Item -Recurse -Force $InstallDir
+} elseif ((Test-Path $PythonExe) -and ($ExistingVersion -ne "") -and ($ExistingVersion -ne "Python $PythonVersion")) {
+    Info "Existing portable Python is: $ExistingVersion"
+    Info "Requested version is:        Python $PythonVersion"
+    Info "Replacing it automatically ..."
     Remove-Item -Recurse -Force $InstallDir
 }
 
 if (Test-Path $PythonExe) {
-    Ok "Portable Python already exists - skipping download."
+    Ok "Portable Python already exists ($ExistingVersion) - skipping download."
     & $PythonExe --version
 } else {
     Info "Downloading: $PythonZipUrl"

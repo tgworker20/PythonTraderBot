@@ -60,7 +60,7 @@ def build_zip(force=False):
             f"Total files: {count + 1} (including this file)\n"
             "\n"
             "Portable-Python kit files included at zip root:\n"
-            "  - install_python_portable.ps1  (downloads portable Python 3.14.3 + pip + requirements)\n"
+            "  - install_python_portable.ps1  (downloads portable Python 3.13.15 + pip + requirements)\n"
             "  - install.bat                  (runs the script above)\n"
             "  - run_portable.bat             (launcher using .\\python\\python.exe)\n"
             "  - run.bat                      (launcher using system Python)\n"

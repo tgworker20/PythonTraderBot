@@ -75,7 +75,8 @@ rem ---------- 3) optional pandas-ta (Python 3.12+) ----------
 if errorlevel 1 (
     echo [NOTE] pandas-ta is not installed.
     echo        It is only needed for the TraderBot / CE_ZLSMA bots
-    echo        and requires Python 3.12 or newer.
+    echo        and works on Python 3.12 / 3.13 only (its numba
+    echo        dependency does not support Python 3.14 yet).
     echo        Install it with:  python -m pip install pandas-ta
     echo.
 )
