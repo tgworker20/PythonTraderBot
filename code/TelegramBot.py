@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 __author__ = "Alireza Sadabadi"
-__copyright__ = "Copyright (c) 2026 Alireza Sadabadi. All rights reserved."
+__copyright__ = "Copyright (c) 2024 Alireza Sadabadi. All rights reserved."
 __credits__ = ["Alireza Sadabadi"]
 __license__ = "Apache"
 __version__ = "2.0"
