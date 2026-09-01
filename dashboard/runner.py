@@ -10,6 +10,11 @@ from catalog import bot_script_path, get_bot, CODE_DIR
 LOGS_DIR = Path(__file__).resolve().parent / "logs"
 LOGS_DIR.mkdir(exist_ok=True)
 
+# bootstrap برای سازگاری با پایتون پرتابل: پکیج embeddable به‌خاطر ._pth
+# در حالت isolated اجرا می‌شود و پوشهٔ اسکریپت را روی sys.path نمی‌گذارد؛
+# این wrapper همان رفتار طبیعی پایتون را برمی‌گرداند (importهای محلی نویسنده).
+BOOTSTRAP = Path(__file__).resolve().parent / "_run_script.py"
+
 # اسکریپت‌های ویژه (بک‌تست‌های MT5 که ربات دائمی نیستند)
 SPECIAL_SCRIPTS = {
     "__mh_bt": {"name": "بک‌تست مایکل هریس", "script": "run_michael_harris_backtest.py", "folder": ""},
@@ -47,8 +52,12 @@ def start_bot(bot_id):
     log_file = open(log_path, "ab")
     log_file.write(f"\n{'=' * 60}\n[{time.strftime('%Y-%m-%d %H:%M:%S')}] START {script.name}\n{'=' * 60}\n".encode("utf-8"))
     try:
+        if BOOTSTRAP.exists():
+            cmd = [sys.executable, "-u", str(BOOTSTRAP), str(script)]
+        else:  # اگر bootstrap نبود، اجرای مستقیم (پایتون معمولی خودش پوشه را می‌گذارد)
+            cmd = [sys.executable, "-u", script.name]
         proc = subprocess.Popen(
-            [sys.executable, "-u", script.name],
+            cmd,
             cwd=str(cwd),
             stdout=log_file,
             stderr=subprocess.STDOUT,
