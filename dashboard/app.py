@@ -189,6 +189,15 @@ def _ensure_broker_symbols():
         st.session_state["broker_symbols"] = r["symbols"]
 
 
+def _stateful_text_input(label, default, key, **kwargs):
+    """متن‌ورودی با مقدار اولیه از session_state (نه پارامتر value) —
+    الگوی رسمی Streamlit: وقتی مقدار ویجت از طریق callback (مثلاً انتخابگر
+    نماد بروکر) پر شود، این‌شکل دیگر هشدار Session State API نمی‌دهد."""
+    if key not in st.session_state:
+        st.session_state[key] = default
+    return st.text_input(label, key=key, **kwargs)
+
+
 def _broker_symbol_picker(label, target_key, picker_key,
                           placeholder="با تایپ جستجو کنید (مثلاً XAU)..."):
     """اگر لیست نمادهای بروکر دریافت شده باشد، یک selectbox جستجودار نشان می‌دهد که
@@ -751,7 +760,7 @@ elif page == "📈 بک‌تست":
                 unsafe_allow_html=True,
         )
         else:
-            sp_sym = st.text_input("نماد طلا در بروکر شما", "XAUUSD", key="sp_sym").strip()
+            sp_sym = _stateful_text_input("نماد طلا در بروکر شما", "XAUUSD", "sp_sym").strip()
             _broker_symbol_picker(
                 "یا از لیست نمادهای بروکر انتخاب کنید (با تایپ جستجو کنید):",
                 "sp_sym", "sp_sym_pick",
@@ -1023,7 +1032,7 @@ elif page == "🗂️ فایل‌ها و ویرایشگر":
         st.markdown("---")
 
         # ---- بررسی تک نماد
-        check_sym = st.text_input("نام نماد برای بررسی", "XAUUSD", key="sym_check_name").strip()
+        check_sym = _stateful_text_input("نام نماد برای بررسی", "XAUUSD", "sym_check_name").strip()
         if st.button("🔍 بررسی نماد", key="sym_check_btn"):
             if not MT5_AVAILABLE:
                 st.info(
@@ -1267,7 +1276,7 @@ elif page == "🧰 ابزارها":
         else:
             c1, c2, c3 = st.columns(3)
             with c1:
-                symbol = st.text_input("نماد", "BITCOIN", key="gt_symbol").strip()
+                symbol = _stateful_text_input("نماد", "BITCOIN", "gt_symbol").strip()
                 _broker_symbol_picker("یا از لیست بروکر:", "gt_symbol", "gt_symbol_pick")
             # نام دقیق نمادهای بروکر (مثل XAUUSDzero) دست‌نخورده می‌ماند؛ تایپ آزاد بزرگ می‌شود
             _bsym_names = {s["name"] for s in st.session_state.get("broker_symbols", [])}
@@ -1306,7 +1315,7 @@ elif page == "🧰 ابزارها":
             if MT5_AVAILABLE and status.get("initialized"):
                 c1, c2, c3 = st.columns(3)
                 with c1:
-                    sym = st.text_input("نماد", "BITCOIN", key="sr_symbol").strip()
+                    sym = _stateful_text_input("نماد", "BITCOIN", "sr_symbol").strip()
                     _broker_symbol_picker("یا از لیست بروکر:", "sr_symbol", "sr_symbol_pick")
                 _bsym_names2 = {s["name"] for s in st.session_state.get("broker_symbols", [])}
                 sym = sym if sym in _bsym_names2 else sym.upper()
