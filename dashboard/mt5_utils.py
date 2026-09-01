@@ -91,6 +91,33 @@ def get_positions_df():
     return pd.DataFrame(rows)
 
 
+def list_broker_symbols():
+    """دریافت لیست کامل نمادهای بروکر از متاتریدر (نام + توضیح + مسیر + وضعیت Market Watch)"""
+    res = {"available": MT5_AVAILABLE, "initialized": False, "symbols": [], "error": "", "count": 0}
+    if not MT5_AVAILABLE:
+        return res
+    try:
+        if not mt5.initialize():
+            res["error"] = str(mt5.last_error())
+            return res
+        res["initialized"] = True
+        syms = mt5.symbols_get() or []
+        rows = []
+        for s in syms:
+            rows.append({
+                "name": s.name,
+                "description": getattr(s, "description", ""),
+                "path": getattr(s, "path", ""),
+                "visible": bool(getattr(s, "visible", False)),
+            })
+        rows.sort(key=lambda r: r["name"])
+        res["symbols"] = rows
+        res["count"] = len(rows)
+    except Exception as e:
+        res["error"] = str(e)
+    return res
+
+
 def symbol_lookup(symbol):
     """بررسی وجود نماد در بروکر + پیشنهاد نام‌های مشابه.
     نام نماد در هر بروکر متفاوت است (طلا: XAUUSD / XAUUSDzero / GOLD.micro ...)."""

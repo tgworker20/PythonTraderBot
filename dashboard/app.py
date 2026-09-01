@@ -21,7 +21,7 @@ import sr_tools
 import editor
 import jupyter_utils
 from catalog import BOTS, LIBRARIES, NOTEBOOKS, CLAIMED_STATS
-from mt5_utils import MT5_AVAILABLE, mt5_status, fetch_rates, TIMEFRAMES, get_positions_df, symbol_lookup
+from mt5_utils import MT5_AVAILABLE, mt5_status, fetch_rates, TIMEFRAMES, get_positions_df, symbol_lookup, list_broker_symbols
 
 # ---------------------------------------------------------------------------
 st.set_page_config(
@@ -175,6 +175,39 @@ def pd_series_fa(d):
     return pd.DataFrame({"مقدار": [_fmt(v) for v in d.values()]}, index=list(d.keys()))
 
 
+def _ensure_broker_symbols():
+    """اگر متاتریدر متصل باشد، لیست نمادهای بروکر را یک‌بار در هر نشست خودکار می‌گیرد.
+    اگر اتصال برقرار نشد، تا فشار بعدیِ دستی تلاش مجدد نمی‌کند."""
+    if "broker_symbols" in st.session_state or not MT5_AVAILABLE:
+        return
+    if st.session_state.get("broker_symbols_failed"):
+        return
+    r = list_broker_symbols()
+    if r["error"]:
+        st.session_state["broker_symbols_failed"] = True
+    else:
+        st.session_state["broker_symbols"] = r["symbols"]
+
+
+def _broker_symbol_picker(label, target_key, picker_key,
+                          placeholder="با تایپ جستجو کنید (مثلاً XAU)..."):
+    """اگر لیست نمادهای بروکر دریافت شده باشد، یک selectbox جستجودار نشان می‌دهد که
+    انتخابش مقدار ویجت نماد (مثلاً فیلد بک‌تست SP2L یا دریافت کندل) را پر می‌کند."""
+    names = [s["name"] for s in st.session_state.get("broker_symbols", [])]
+    if not names:
+        return
+
+    def _apply():
+        v = st.session_state.get(picker_key)
+        if v:
+            st.session_state[target_key] = v
+
+    st.selectbox(
+        label, names, index=None, placeholder=placeholder,
+        key=picker_key, on_change=_apply,
+    )
+
+
 # ---------------------------------------------------------------------------
 # نوار کناری
 # ---------------------------------------------------------------------------
@@ -198,6 +231,7 @@ st.sidebar.markdown("---")
 
 # وضعیت متاتریدر در سایدبار
 status = mt5_status()
+_ensure_broker_symbols()  # دریافت خودکار لیست نمادهای بروکر (یک‌بار در هر نشست)
 if status["available"] and status.get("initialized"):
     acc = status.get("account") or {}
     st.sidebar.success(f"✅ متاتریدر متصل — {acc.get('login', '?')} @ {acc.get('server', '?')}")
@@ -327,13 +361,6 @@ elif page == "🤖 ربات‌های زنده":
             continue
         run = runner.is_running(bot["id"])
         pinfo = runner.process_info(bot["id"])
-        # متن سادهٔ وضعیت برای برچسب expander (HTML در برچسب ویجت‌ها رندر نمی‌شود)
-        state_text = (
-            f"در حال اجرا (PID {pinfo['pid']})" if run
-            else ("متوقف" + (
-                f" — کد خروج {pinfo['returncode']}" if pinfo.get("returncode") is not None else ""))
-        )
-        # pillهای رنگی — داخل بدنهٔ expander با unsafe_allow_html رندر می‌شوند
         state_html = (
             f'<span class="pill pill-run">🟢 در حال اجرا (PID {pinfo["pid"]})</span>' if run
             else ('<span class="pill pill-stop">⚪ متوقف' + (
@@ -345,8 +372,7 @@ elif page == "🤖 ربات‌های زنده":
             c = bot["claimed"]
             claim_html = f'<span class="pill pill-ok">🏆 {c["metric"]}: {c["value"]}</span>'
 
-        with st.expander(f"{'🟢' if run else '⚪'} {bot['name']} — {state_text}", expanded=run):
-            st.markdown(f"{state_html} &nbsp; {claim_html}", unsafe_allow_html=True)
+        with st.expander(f"{'🟢' if run else '⚙️'} {bot['name']} — {state_html} &nbsp; {claim_html}", expanded=run):
             m1, m2, m3, m4 = st.columns(4)
             m1.markdown(f"**فایل:** `{bot['folder'] + '/' if bot['folder'] else ''}{bot['file']}`")
             m2.markdown(f"**تایم‌فریم:** {bot['timeframe']}")
@@ -718,6 +744,10 @@ elif page == "📈 بک‌تست":
         )
         else:
             sp_sym = st.text_input("نماد طلا در بروکر شما", "XAUUSD", key="sp_sym").strip()
+            _broker_symbol_picker(
+                "یا از لیست نمادهای بروکر انتخاب کنید (با تایپ جستجو کنید):",
+                "sp_sym", "sp_sym_pick",
+            )
             st.caption(
                 "نام دقیق نماد را وارد کنید (مثلاً XAUUSDzero یا GOLD) — با ابزار «بررسی نماد» در صفحهٔ "
                 "«🗂️ فایل‌ها و ویرایشگر» یا از پنجرهٔ Market Watch متاتریدر می‌توانید نام درست بروکر خودتان را پیدا کنید. "
@@ -921,18 +951,71 @@ elif page == "🗂️ فایل‌ها و ویرایشگر":
     # ------------------------------------------------------ ویرایش نماد ربات‌ها
     st.markdown("### 🏷️ ویرایش نماد و حجم معاملهٔ ربات‌ها")
 
-    # ------------------------------------------ بررسی نام نماد در بروکر کاربر
-    with st.expander("🔍 بررسی نام نماد در بروکر شما (مثلاً XAUUSDzero)"):
+    # ------------------------------------------ نمادهای بروکر کاربر
+    with st.expander("🔍 نمادهای بروکر شما — لیست خودکار از متاتریدر + بررسی نام"):
         st.caption(
             "نام نمادها در هر بروکر متفاوت است — طلا می‌تواند XAUUSD، XAUUSDzero، GOLD.micro و... باشد. "
-            "قبل از تنظیم ربات‌ها یا بک‌تست‌ها، نام دقیق بروکر خودتان را اینجا چک کنید."
+            "لیست کامل نمادهای بروکر خودتان را از متاتریدر بگیرید، جستجو کنید و نام دقیق را در همهٔ بخش‌های برنامه استفاده کنید."
         )
-        sc1, sc2 = st.columns([3, 1])
-        with sc1:
-            check_sym = st.text_input("نام نماد برای بررسی", "XAUUSD", key="sym_check_name").strip()
-        with sc2:
-            st.write("")
-            st.write("")
+
+        # ---- دریافت/بروزرسانی لیست خودکار
+        lb1, _ = st.columns([1, 2])
+        with lb1:
+            if st.button("📥 دریافت لیست نمادها از متاتریدر", key="sym_list_btn"):
+                if not MT5_AVAILABLE:
+                    st.info(
+                        "🔌 پکیج MetaTrader5 فقط روی ویندوز در دسترس است — روی سیستم ویندوزی خودتان "
+                        "(با متاتریدر باز و لاگین‌شده) استفاده کنید."
+                    )
+                else:
+                    r = list_broker_symbols()
+                    st.session_state.pop("broker_symbols_failed", None)
+                    if r["error"]:
+                        st.error(f"خطا در اتصال به متاتریدر: {r['error']}")
+                        st.session_state.pop("broker_symbols", None)
+                        st.session_state["broker_symbols_failed"] = True
+                    else:
+                        st.session_state["broker_symbols"] = r["symbols"]
+                        st.toast(f"✅ {r['count']:,} نماد از بروکر دریافت شد")
+                        st.rerun()
+
+        if "broker_symbols" not in st.session_state:
+            st.caption(
+                "💡 متاتریدر را باز و لاگین کنید — اگر برنامه متصل باشد، لیست نمادها **خودکار** دریافت می‌شود؛ "
+                "در غیر این صورت دکمهٔ بالا را بزنید. (لیست یک‌بار در هر نشست ذخیره می‌شود)"
+            )
+        else:
+            syms = st.session_state["broker_symbols"]
+            st.success(f"✅ {len(syms):,} نماد از بروکر شما دریافت شده است.")
+            only_mw = st.toggle("فقط نمادهای Market Watch", False, key="sym_only_mw")
+            shown = [s for s in syms if s["visible"]] if only_mw else syms
+            q = st.text_input("🔎 جستجو در نام/توضیح/مسیر (مثلاً XAU)", "", key="sym_search").strip().upper()
+            if q:
+                shown = [s for s in shown
+                         if q in s["name"].upper() or q in s["description"].upper() or q in s["path"].upper()]
+            st.caption(f"**{len(shown):,}** نماد" + (" — ۳۰۰ مورد اول در جدول زیر است" if len(shown) > 300 else ""))
+            st.dataframe(
+                [{"نام": s["name"], "توضیح": s["description"], "مسیر": s["path"],
+                  "Market Watch": "✅" if s["visible"] else "—"} for s in shown[:300]],
+                width='stretch', hide_index=True,
+            )
+
+            def _fill_check():
+                v = st.session_state.get("sym_pick")
+                if v:
+                    st.session_state["sym_check_name"] = v
+
+            st.selectbox(
+                "انتخاب سریع برای بررسی صحت (با تایپ جستجو کنید)",
+                [s["name"] for s in shown], index=None,
+                placeholder="مثلاً XAUUSDzero...",
+                key="sym_pick", on_change=_fill_check,
+            )
+
+        st.markdown("---")
+
+        # ---- بررسی تک نماد
+        check_sym = st.text_input("نام نماد برای بررسی", "XAUUSD", key="sym_check_name").strip()
         if st.button("🔍 بررسی نماد", key="sym_check_btn"):
             if not MT5_AVAILABLE:
                 st.info(
@@ -1175,7 +1258,12 @@ elif page == "🧰 ابزارها":
             )
         else:
             c1, c2, c3 = st.columns(3)
-            symbol = c1.text_input("نماد", "BITCOIN", key="gt_symbol").upper()
+            with c1:
+                symbol = st.text_input("نماد", "BITCOIN", key="gt_symbol").strip()
+                _broker_symbol_picker("یا از لیست بروکر:", "gt_symbol", "gt_symbol_pick")
+            # نام دقیق نمادهای بروکر (مثل XAUUSDzero) دست‌نخورده می‌ماند؛ تایپ آزاد بزرگ می‌شود
+            _bsym_names = {s["name"] for s in st.session_state.get("broker_symbols", [])}
+            symbol = symbol if symbol in _bsym_names else symbol.upper()
             tf_label = c2.selectbox("تایم‌فریم", list(TIMEFRAMES.keys()), key="gt_tf")
             count = c3.number_input("تعداد کندل", 100, 100000, 5000, 100, key="gt_count")
             if st.button("📥 دریافت", type="primary", key="gt_run"):
@@ -1209,7 +1297,11 @@ elif page == "🧰 ابزارها":
         else:
             if MT5_AVAILABLE and status.get("initialized"):
                 c1, c2, c3 = st.columns(3)
-                sym = c1.text_input("نماد", "BITCOIN", key="sr_symbol").upper()
+                with c1:
+                    sym = st.text_input("نماد", "BITCOIN", key="sr_symbol").strip()
+                    _broker_symbol_picker("یا از لیست بروکر:", "sr_symbol", "sr_symbol_pick")
+                _bsym_names2 = {s["name"] for s in st.session_state.get("broker_symbols", [])}
+                sym = sym if sym in _bsym_names2 else sym.upper()
                 tf2 = c2.selectbox("تایم‌فریم", list(TIMEFRAMES.keys()), index=5, key="sr_tf")
                 cnt2 = c3.number_input("تعداد کندل", 100, 100000, 5000, 100, key="sr_count")
                 if st.button("📥 دریافت و تحلیل", type="primary", key="sr_run"):
