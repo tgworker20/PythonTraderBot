@@ -15,7 +15,12 @@ venv/
 access_id_secret_key.csv
 michael_harris_optimize_heatmap.png
 
-# پوشهٔ سرور دانلود (فقط صفحهٔ ایندکس نگه داشته می‌شود)
+# پوشهٔ سرور دانلود (صفحهٔ ایندکس + فایل‌های دانلود مستقیم)
 download/*
 !download/index.html
 !download/*.zip
+!download/SP2L_Indicator.mq5
+!download/README_SP2L_Indicator_EN.md
+!download/run.bat
+!download/requirements.txt
+!download/START_HERE_FA.md
