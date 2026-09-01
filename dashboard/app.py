@@ -21,7 +21,7 @@ import sr_tools
 import editor
 import jupyter_utils
 from catalog import BOTS, LIBRARIES, NOTEBOOKS, CLAIMED_STATS
-from mt5_utils import MT5_AVAILABLE, mt5_status, fetch_rates, TIMEFRAMES, get_positions_df
+from mt5_utils import MT5_AVAILABLE, mt5_status, fetch_rates, TIMEFRAMES, get_positions_df, symbol_lookup
 
 # ---------------------------------------------------------------------------
 st.set_page_config(
@@ -709,9 +709,19 @@ elif page == "📈 بک‌تست":
                 unsafe_allow_html=True,
         )
         else:
+            sp_sym = st.text_input("نماد طلا در بروکر شما", "XAUUSD", key="sp_sym").strip()
+            st.caption(
+                "نام دقیق نماد را وارد کنید (مثلاً XAUUSDzero یا GOLD) — با ابزار «بررسی نماد» در صفحهٔ "
+                "«🗂️ فایل‌ها و ویرایشگر» یا از پنجرهٔ Market Watch متاتریدر می‌توانید نام درست بروکر خودتان را پیدا کنید. "
+                "هنگام اجرا، همین مقدار در فایل بک‌تست تنظیم می‌شود (با بکاپ)."
+            )
             if st.button("🚀 اجرای بک‌تست SP2L", type="primary", key="sp_run"):
-                ok, msg = runner.start_bot("__sp_bt")
-                st.toast(msg)
+                ok_p, msg_p = editor.set_backtest_symbol("SP2L/run_sp2l_backtest.py", "SYMBOL", sp_sym)
+                if not ok_p:
+                    st.error(msg_p)
+                else:
+                    ok, msg = runner.start_bot("__sp_bt")
+                    st.toast(f"{msg_p} | {msg}")
             info = runner.process_info("__sp_bt")
             if info["state"] != "stopped":
                 if st.button("⛔ توقف", key="sp_stop"):
@@ -719,7 +729,7 @@ elif page == "📈 بک‌تست":
                     st.rerun()
             st.markdown("**لاگ:**")
             st.markdown(f'<div class="log-box">{runner.read_log("__sp_bt", tail=120)}</div>', unsafe_allow_html=True)
-            st.caption("پارامترها (فیلترها، TP_R، ورود دوم و...) در ابتدای فایل code/SP2L/run_sp2l_backtest.py قابل تغییرند.")
+            st.caption("سایر پارامترها (فیلترها، TP_R، ورود دوم و...) در ابتدای فایل code/SP2L/run_sp2l_backtest.py قابل تغییرند — نماد را از کادر بالا عوض کنید.")
 
 
 # ===========================================================================
@@ -902,6 +912,45 @@ elif page == "🗂️ فایل‌ها و ویرایشگر":
 
     # ------------------------------------------------------ ویرایش نماد ربات‌ها
     st.markdown("### 🏷️ ویرایش نماد و حجم معاملهٔ ربات‌ها")
+
+    # ------------------------------------------ بررسی نام نماد در بروکر کاربر
+    with st.expander("🔍 بررسی نام نماد در بروکر شما (مثلاً XAUUSDzero)"):
+        st.caption(
+            "نام نمادها در هر بروکر متفاوت است — طلا می‌تواند XAUUSD، XAUUSDzero، GOLD.micro و... باشد. "
+            "قبل از تنظیم ربات‌ها یا بک‌تست‌ها، نام دقیق بروکر خودتان را اینجا چک کنید."
+        )
+        sc1, sc2 = st.columns([3, 1])
+        with sc1:
+            check_sym = st.text_input("نام نماد برای بررسی", "XAUUSD", key="sym_check_name").strip()
+        with sc2:
+            st.write("")
+            st.write("")
+        if st.button("🔍 بررسی نماد", key="sym_check_btn"):
+            if not MT5_AVAILABLE:
+                st.info(
+                    "🔌 پکیج MetaTrader5 فقط روی ویندوز در دسترس است — این ابزار را روی سیستم ویندوزی خودتان "
+                    "(با متاتریدر باز و لاگین‌شده) استفاده کنید."
+                )
+            else:
+                r = symbol_lookup(check_sym)
+                if r["error"]:
+                    st.error(f"خطا در اتصال به متاتریدر: {r['error']}")
+                elif r["found"]:
+                    si = r["info"]
+                    st.success(f"✅ نماد «{si['name']}» در بروکر شما موجود است — {si['description']}")
+                    st.markdown(
+                        f"ارقام اعشار: **{si['digits']}** | حداقل حجم: **{si['volume_min']}** "
+                        f"| به Market Watch اضافه شد (برای دریافت کندل لازم است)"
+                    )
+                elif r["matches"]:
+                    st.warning(f"⚠️ نماد «{check_sym}» با این نام دقیق در بروکر شما نیست، اما این نمادهای مشابه پیدا شدند:")
+                    st.markdown("، ".join(f"`{m}`" for m in r["matches"]))
+                else:
+                    st.error(
+                        f"❌ نماد «{check_sym}» پیدا نشد و نام مشابهی هم یافت نشد. متاتریدر را باز و لاگین کنید "
+                        "و نام دقیق را از پنجرهٔ Market Watch کپی کنید."
+                    )
+
     st.caption("به‌جای دست‌بردن به کد، اینجا نماد و lot هر ربات را تغییر بده — تغییر با بکاپ امن روی فایل اصلی ذخیره می‌شود.")
 
     bot_choice = st.selectbox(
@@ -928,9 +977,12 @@ elif page == "🗂️ فایل‌ها و ویرایشگر":
                     key="sym_editor_table",
                     width='stretch',
                 )
+                # نکته: data_editor با ورودیِ لیست، خروجی هم لیست می‌دهد (نه DataFrame)
+                # — هر دو حالت پشتیبانی می‌شود تا روی همهٔ نسخه‌های streamlit کار کند.
+                rows_list = rows if isinstance(rows, list) else rows.to_dict("records")
                 new_entries = [
-                    {"key": r["کلید"], "symbol": r["نماد"], "lot": r["حجم (lot)"]}
-                    for _, r in rows.iterrows()
+                    {"key": r.get("کلید", ""), "symbol": r.get("نماد", ""), "lot": r.get("حجم (lot)", 0.01)}
+                    for r in rows_list
                 ]
                 extra = {}
                 if sb["kind"] == "const+symbols_list":

@@ -186,6 +186,26 @@ def apply_symbol_var(src, new_value):
     return src[:m.start()] + m.group(1) + m.group(2) + new_value + m.group(4) + src[m.end():], True
 
 
+def set_backtest_symbol(file_rel, varname, value):
+    """تنظیم متغیر رشته‌ای (مثل SYMBOL) در بخش SETTINGS اسکریپت بک‌تست — با بکاپ امن.
+    فقط مقدار پیکربندی عوض می‌شود، منطق استراتژی دست نمی‌خورد."""
+    if not value or not str(value).strip():
+        return False, "نماد خالی است."
+    value = str(value).strip()
+    p = CODE_DIR / file_rel
+    if not p.exists():
+        return False, f"فایل یافت نشد: {file_rel}"
+    src = read_text(p)
+    new_src, ok = apply_const(src, varname, value)
+    if not ok:
+        return False, f"متغیر {varname} در فایل پیدا نشد."
+    if new_src == src:
+        return True, "نماد همین بود — تغییری لازم نشد."
+    backup_file(p)
+    write_text(p, new_src, backup=False)
+    return True, f"نماد «{value}» در {file_rel} تنظیم و از نسخهٔ قبلی بکاپ گرفته شد."
+
+
 def edit_bot_config(file_rel, edits):
     """اعمال ویرایش نماد/حجم روی فایل ربات — edits: dict طبق kind"""
     path = CODE_DIR / file_rel

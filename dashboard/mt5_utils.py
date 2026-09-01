@@ -89,3 +89,49 @@ def get_positions_df():
         "sl": p.sl, "tp": p.tp, "profit": p.profit, "magic": p.magic,
     } for p in positions]
     return pd.DataFrame(rows)
+
+
+def symbol_lookup(symbol):
+    """بررسی وجود نماد در بروکر + پیشنهاد نام‌های مشابه.
+    نام نماد در هر بروکر متفاوت است (طلا: XAUUSD / XAUUSDzero / GOLD.micro ...)."""
+    res = {"available": MT5_AVAILABLE, "initialized": False, "found": False,
+           "info": None, "matches": [], "error": ""}
+    if not MT5_AVAILABLE:
+        return res
+    try:
+        if not mt5.initialize():
+            res["error"] = str(mt5.last_error())
+            return res
+        res["initialized"] = True
+        si = mt5.symbol_info(symbol)
+        if si is not None:
+            try:
+                mt5.symbol_select(symbol, True)  # اضافه به Market Watch برای دریافت داده
+            except Exception:
+                pass
+            res["found"] = True
+            res["info"] = {
+                "name": si.name,
+                "description": getattr(si, "description", ""),
+                "digits": si.digits,
+                "point": si.point,
+                "volume_min": si.volume_min,
+                "trade_mode": si.trade_mode,
+            }
+            return res
+        # پیدا نشد → جستجوی نام‌های مشابه
+        q = str(symbol).upper().strip()
+        names = []
+        try:
+            names = sorted(s.name for s in (mt5.symbols_get() or []))
+        except Exception:
+            names = []
+        seen = []
+        for pat in [q] + ([q[:3]] if len(q) >= 4 else []):
+            for n in names:
+                if pat in n.upper() and n not in seen:
+                    seen.append(n)
+        res["matches"] = seen[:40]
+    except Exception as e:
+        res["error"] = str(e)
+    return res
