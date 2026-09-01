@@ -19,10 +19,9 @@ michael_harris_optimize_heatmap.png
 download/*
 !download/index.html
 !download/*.zip
-!download/SP2L_Indicator.mq5
-!download/SP2L_Indicator.mq4
-!download/README_SP2L_Indicator_EN.md
-!download/README_SP2L_Indicator_MT4_EN.md
+!download/*.mq5
+!download/*.mq4
+!download/README_*.md
 !download/run.bat
 !download/requirements.txt
 !download/START_HERE_FA.md
